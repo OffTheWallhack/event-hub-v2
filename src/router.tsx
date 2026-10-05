@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard'
 import { EventPage } from './pages/EventPage'
 import { Cartons } from './pages/Cartons'
 import { EquipmentPage } from './pages/EquipmentPage'
+import { Finance } from './pages/Finance'
 
 type Ctx = { isAdmin: boolean }
 
@@ -51,7 +52,12 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: '/technika', component: EquipmentPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/kartony', component: Cartons }),
   page('/garaz', 'Garáž', 9),
-  page('/financie', 'Financie', 6, true),
+  createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/financie',
+    beforeLoad: ({ context }) => { if (!(context as Ctx).isAdmin) throw redirect({ to: '/' }) },
+    component: Finance,
+  }),
   page('/export', 'Export', 7),
   usersRoute,
 ])

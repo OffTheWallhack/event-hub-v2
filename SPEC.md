@@ -98,7 +98,7 @@ Excel (.xlsx), v dnešných tvaroch, aby si ich Robert len prehodil do svojich s
 
 ## 8. Google Drive
 - Fotky: priečinok `Eventy/<YYYY-MM>/<DD.MM. Názov eventu>`, appka ho vytvorí sama a zapíše odkaz.
-- Účty: existujúci priečinok s mesačnými podpriečinkami. Súbory sa nahrávajú z appky, názov podľa vzoru vyššie.
+- Účty: priečinok appky `Event Hub / Účty / YYYY-MM` (rozhodnutie 10/2026, scope drive.file). Súbory sa nahrávajú z appky, názov podľa vzoru vyššie.
 - Dodatočne sa dajú exporty a dáta nahrať aj do Basecampu (ručne, nízka priorita).
 
 ## 9. Migrácia zo starej appky (Lovable Cloud → nový Supabase)
@@ -114,7 +114,7 @@ Prenáša sa **všetko**, vrátane väzieb: events (322), drivers (17), event_dr
 3. ICS sync + kalendár + stránka eventu ✅ hotové
 4. Kartóny + príchute ✅ hotové
 5. Technika + sady ✅ hotové
-6. Financie + nahrávanie dokladov do Drive
+6. Financie + nahrávanie dokladov do Drive ✅ hotové
 7. Exporty (FINANCE a Event Car ako prvé)
 8. Odkaz/PDF pre vodiča
 9. Garáž + to-dos + pripomienky (Telegram/Grok bot)

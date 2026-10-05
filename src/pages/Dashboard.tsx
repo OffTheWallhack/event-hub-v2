@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { SyncBox } from '../components/SyncBox'
+import { monthRange, summarize } from '../lib/finance'
+import { eur } from '../lib/events'
 import {
   type EventRow, type EventType, TYPE_COLOR, TYPE_LABEL, TYPE_TEXT,
   addDays, diffDays, endDay, monthName, startDay, todayLocal,
@@ -221,6 +223,8 @@ export function Dashboard() {
       </div>
       <p className="text-xs muted mt-1">Porovnanie s mesiacom {monthName(prev.m)}. Zrušené eventy sa nerátajú.</p>
 
+      {isAdmin && <FinanceSummary month={monthKey(y, m)} />}
+
       <SyncBox isAdmin={isAdmin} onSynced={() => setReload((r) => r + 1)} />
     </section>
   )
@@ -239,5 +243,28 @@ function Stat({ label, value, prev, color }: { label: string; value: number; pre
         {diff === 0 ? 'rovnako' : diff > 0 ? `+${diff}` : diff} <span className="opacity-70">(min. {prev})</span>
       </p>
     </div>
+  )
+}
+
+// Mesačný prehľad financií (len admin).
+function FinanceSummary({ month }: { month: string }) {
+  const [sum, setSum] = useState<ReturnType<typeof summarize> | null>(null)
+  useEffect(() => {
+    const [from, to] = monthRange(month)
+    Promise.all([
+      supabase.from('expenses').select('amount').gte('date', from).lt('date', to),
+      supabase.from('driver_payouts').select('amount, tax_rate, events!inner(start_date)').gte('events.start_date', from).lt('events.start_date', to),
+    ]).then(([e, p]) => setSum(summarize(e.data ?? [], p.data ?? [])))
+  }, [month])
+  if (!sum) return null
+  return (
+    <>
+      <h2 className="display text-2xl font-bold mt-6">Financie mesiaca</h2>
+      <Link to="/financie" className="grid grid-cols-3 gap-2 mt-2">
+        <div className="card p-3"><p className="text-[11px] muted">Vedľajšie náklady</p><p className="display text-xl font-bold">{eur(sum.exp)}</p></div>
+        <div className="card p-3"><p className="text-[11px] muted">Brigádnici + 15 %</p><p className="display text-xl font-bold">{eur(sum.pay)}</p></div>
+        <div className="card p-3 border-2 border-[var(--color-signal)]"><p className="text-[11px] muted">Pošle Red Bull</p><p className="display text-xl font-bold">{eur(sum.total)}</p></div>
+      </Link>
+    </>
   )
 }

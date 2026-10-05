@@ -4,6 +4,9 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { MovementForm } from '../components/MovementForm'
 import { EventGear } from '../components/EventGear'
+import { EventDrivers } from '../components/EventDrivers'
+import { ExpenseForm } from '../components/ExpenseForm'
+import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
 import type { Flavor } from '../lib/cartons'
 import {
   type Department, type EventRow, type EventStatus, type EventType,
@@ -11,16 +14,11 @@ import {
   durationDays, eur, fmtDay, fmtRange, startDay,
 } from '../lib/events'
 
-type Driver = { position: number; drivers: { id: string; name: string } | null }
 type Carton = { cartons: number; flavors: { name: string; label: string | null; sort_order: number } | null }
-type Expense = { id: string; date: string; doc_type: string | null; amount: number; description: string | null; drive_file_url: string | null }
 type Payout = { id: string; amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null }
 
-type Details = { drivers: Driver[]; cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
+type Details = { cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
 
-const DOC_LABEL: Record<string, string> = {
-  blok: 'Bloček', ucet: 'Účet', faktura: 'Faktúra', taxi: 'Taxi', brigadnik: 'Brigádnik', screenshot: 'Screenshot', ziadny: 'Žiadny doklad',
-}
 const STATUSES: EventStatus[] = ['planned', 'done', 'cancelled']
 const TYPES: EventType[] = ['event_car', 'support', 'adhoc', 'servis']
 const DEPTS: Department[] = ['ec', 'culture', 'sport', 'onpremise']
@@ -33,6 +31,7 @@ export function EventPage() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [addCartons, setAddCartons] = useState<Flavor[] | null>(null)
+  const [expenseForm, setExpenseForm] = useState<Expense | 'new' | null>(null)
 
   async function load() {
     const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle()
@@ -40,18 +39,16 @@ export function EventPage() {
     if (!data) return setError('Event sa nenašiel.')
     setEv(data as EventRow)
 
-    const [drv, ct, ex, po] = await Promise.all([
-      supabase.from('event_drivers').select('position, drivers(id, name)').eq('event_id', id).order('position'),
+    const [ct, ex, po] = await Promise.all([
       supabase.from('carton_movements').select('cartons, flavors(name, label, sort_order)').eq('event_id', id).eq('type', 'event'),
       isAdmin
-        ? supabase.from('expenses').select('id, date, doc_type, amount, description, drive_file_url').eq('event_id', id).order('date')
+        ? supabase.from('expenses').select(EXPENSE_COLUMNS).eq('event_id', id).order('date')
         : Promise.resolve({ data: [] }),
       isAdmin
         ? supabase.from('driver_payouts').select('id, amount, tax_rate, paid, drivers(name)').eq('event_id', id)
         : Promise.resolve({ data: [] }),
     ])
     setD({
-      drivers: (drv.data ?? []) as unknown as Driver[],
       cartons: (ct.data ?? []) as unknown as Carton[],
       expenses: (ex.data ?? []) as unknown as Expense[],
       payouts: (po.data ?? []) as unknown as Payout[],
@@ -123,18 +120,33 @@ export function EventPage() {
       </div>
 
       {isAdmin && (
-        <Card title="Náklady" right={<span className="display text-2xl font-bold">{eur(expSum + paySum)}</span>}>
-          {d.expenses.length === 0 && d.payouts.length === 0 ? (
+        <Card
+          title="Náklady"
+          right={
+            <span className="flex items-center gap-2">
+              <span className="display text-2xl font-bold">{eur(expSum + paySum)}</span>
+              {!expenseForm && <button onClick={() => setExpenseForm('new')} className="h-9 px-3 rounded-lg border line text-sm font-medium">+ Účet</button>}
+            </span>
+          }
+        >
+          {expenseForm ? (
+            <ExpenseForm
+              expense={expenseForm === 'new' ? undefined : expenseForm}
+              fixedEventId={ev.id}
+              defaultDay={startDay(ev)}
+              onDone={(saved) => { setExpenseForm(null); if (saved) load() }}
+            />
+          ) : d.expenses.length === 0 && d.payouts.length === 0 ? (
             <p className="muted text-sm">{ev.no_expenses ? 'Bez nákladov.' : 'Zatiaľ žiadne účty.'}</p>
           ) : (
             <ul className="divide-y line text-sm">
               {d.expenses.map((e) => (
                 <li key={e.id} className="py-2 flex gap-2 items-baseline">
                   <span className="muted w-14 shrink-0">{fmtDay(e.date).replace(/ \d{4}$/, '')}</span>
-                  <span className="flex-1 min-w-0 truncate">
-                    {DOC_LABEL[e.doc_type ?? ''] ?? 'Doklad'}{e.description ? ` · ${e.description}` : ''}
-                    {e.drive_file_url && <a href={e.drive_file_url} target="_blank" rel="noreferrer" className="ml-1 text-[var(--color-sky)]">↗</a>}
-                  </span>
+                  <button onClick={() => setExpenseForm(e)} className="flex-1 min-w-0 truncate text-left">
+                    {(e.doc_type && DOC_LABEL[e.doc_type]) ?? 'Doklad'}{e.description ? ` · ${e.description}` : ''}
+                  </button>
+                  {e.drive_file_url && <a href={e.drive_file_url} target="_blank" rel="noreferrer" className="text-[var(--color-sky)]" title="Doklad">📄</a>}
                   <span className="font-semibold tabular-nums">{eur(Number(e.amount))}</span>
                 </li>
               ))}
@@ -167,12 +179,12 @@ export function EventPage() {
             </Row>
             <Row label="Kontakt">{ev.contact && <span className="whitespace-pre-wrap">{linkify(ev.contact)}</span>}</Row>
             <Row label="Diváci">{ev.spectators}</Row>
-            <Row label="Vodiči">{d.drivers.length > 0 && d.drivers.map((x) => x.drivers?.name).join(', ')}</Row>
             <Row label="Popis">{ev.description && <span className="whitespace-pre-wrap">{ev.description}</span>}</Row>
           </dl>
         </Card>
       )}
 
+      <EventDrivers eventId={ev.id} isAdmin={isAdmin} onChanged={load} />
       <EventGear eventId={ev.id} isAdmin={isAdmin} />
 
       <Card

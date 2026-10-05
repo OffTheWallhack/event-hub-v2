@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, type Profile, type Role } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { DriveBox } from '../components/DriveBox'
 
 const ROLE_LABEL: Record<Role, string> = { pending: 'Čaká', driver: 'Vodič (čítanie)', admin: 'Admin' }
 
@@ -66,6 +67,7 @@ export function Users() {
           )
         })}
       </ul>
+      <DriveBox />
     </section>
   )
 }
