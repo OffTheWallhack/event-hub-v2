@@ -44,7 +44,7 @@ Všetky tabuľky majú `id uuid`, `created_at`, `updated_at`.
 - Pre Roberta sa výplata nezadáva. Pre iného vodiča appka vyzve na sumu.
 - Daň 15 % sa **pripočíta navrch** (100 € → náklad 115 €). Zvyčajne za celý event.
 
-**equipment** — katalóg techniky, **každý kus samostatný riadok** (každá chladnička zvlášť; repráky a CDJ v pároch netreba rozlišovať, stačí `quantity`)
+**equipment** — katalóg techniky po skupinách s `quantity` (rozhodnutie 10/2026: chladničky sa nerozdeľujú; pokazené/požičané kusy v `qty_broken` / `qty_borrowed`)
 - `name`, `category` (`coolers|audio|branding|others`), `quantity`, `photo_path`
 - `status`: `ok|broken|lost|rented_out|borrowed|in_rent`, `status_note`, `held_by` (komu požičané), `status_event_id`
 - Pridať novú techniku môže len admin, bez zásahu do kódu.
@@ -113,7 +113,7 @@ Prenáša sa **všetko**, vrátane väzieb: events (322), drivers (17), event_dr
 2. Schéma DB + migrácia dát ✅ hotové
 3. ICS sync + kalendár + stránka eventu ✅ hotové
 4. Kartóny + príchute ✅ hotové
-5. Technika + sady
+5. Technika + sady ✅ hotové
 6. Financie + nahrávanie dokladov do Drive
 7. Exporty (FINANCE a Event Car ako prvé)
 8. Odkaz/PDF pre vodiča

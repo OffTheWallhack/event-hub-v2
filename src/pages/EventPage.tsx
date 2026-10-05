@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { MovementForm } from '../components/MovementForm'
+import { EventGear } from '../components/EventGear'
 import type { Flavor } from '../lib/cartons'
 import {
   type Department, type EventRow, type EventStatus, type EventType,
@@ -10,19 +11,16 @@ import {
   durationDays, eur, fmtDay, fmtRange, startDay,
 } from '../lib/events'
 
-type Vehicle = { is_primary: boolean; vehicles: { name: string } | null }
 type Driver = { position: number; drivers: { id: string; name: string } | null }
-type Equip = { quantity: number; issue: string; returned_confirmed: boolean; equipment: { name: string; category: string } | null }
 type Carton = { cartons: number; flavors: { name: string; label: string | null; sort_order: number } | null }
 type Expense = { id: string; date: string; doc_type: string | null; amount: number; description: string | null; drive_file_url: string | null }
 type Payout = { id: string; amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null }
 
-type Details = { vehicles: Vehicle[]; drivers: Driver[]; equipment: Equip[]; cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
+type Details = { drivers: Driver[]; cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
 
 const DOC_LABEL: Record<string, string> = {
   blok: 'Bloček', ucet: 'Účet', faktura: 'Faktúra', taxi: 'Taxi', brigadnik: 'Brigádnik', screenshot: 'Screenshot', ziadny: 'Žiadny doklad',
 }
-const ISSUE_LABEL: Record<string, string> = { broken: 'pokazené', not_returned: 'nevrátené' }
 const STATUSES: EventStatus[] = ['planned', 'done', 'cancelled']
 const TYPES: EventType[] = ['event_car', 'support', 'adhoc', 'servis']
 const DEPTS: Department[] = ['ec', 'culture', 'sport', 'onpremise']
@@ -42,10 +40,8 @@ export function EventPage() {
     if (!data) return setError('Event sa nenašiel.')
     setEv(data as EventRow)
 
-    const [veh, drv, eq, ct, ex, po] = await Promise.all([
-      supabase.from('event_vehicles').select('is_primary, vehicles(name)').eq('event_id', id),
+    const [drv, ct, ex, po] = await Promise.all([
       supabase.from('event_drivers').select('position, drivers(id, name)').eq('event_id', id).order('position'),
-      supabase.from('event_equipment').select('quantity, issue, returned_confirmed, equipment(name, category)').eq('event_id', id),
       supabase.from('carton_movements').select('cartons, flavors(name, label, sort_order)').eq('event_id', id).eq('type', 'event'),
       isAdmin
         ? supabase.from('expenses').select('id, date, doc_type, amount, description, drive_file_url').eq('event_id', id).order('date')
@@ -55,9 +51,7 @@ export function EventPage() {
         : Promise.resolve({ data: [] }),
     ])
     setD({
-      vehicles: (veh.data ?? []) as unknown as Vehicle[],
       drivers: (drv.data ?? []) as unknown as Driver[],
-      equipment: (eq.data ?? []) as unknown as Equip[],
       cartons: (ct.data ?? []) as unknown as Carton[],
       expenses: (ex.data ?? []) as unknown as Expense[],
       payouts: (po.data ?? []) as unknown as Payout[],
@@ -173,18 +167,13 @@ export function EventPage() {
             </Row>
             <Row label="Kontakt">{ev.contact && <span className="whitespace-pre-wrap">{linkify(ev.contact)}</span>}</Row>
             <Row label="Diváci">{ev.spectators}</Row>
-            <Row label="Vozidlá">
-              {d.vehicles.length > 0 &&
-                [...d.vehicles]
-                  .sort((a, b) => Number(b.is_primary) - Number(a.is_primary))
-                  .map((v) => v.vehicles?.name)
-                  .join(', ')}
-            </Row>
             <Row label="Vodiči">{d.drivers.length > 0 && d.drivers.map((x) => x.drivers?.name).join(', ')}</Row>
             <Row label="Popis">{ev.description && <span className="whitespace-pre-wrap">{ev.description}</span>}</Row>
           </dl>
         </Card>
       )}
+
+      <EventGear eventId={ev.id} isAdmin={isAdmin} />
 
       <Card
         title="Kartóny"
@@ -212,23 +201,6 @@ export function EventPage() {
         )}
       </Card>
 
-      <Card title="Technika">
-        {d.equipment.length === 0 ? (
-          <p className="muted text-sm">Žiadna.</p>
-        ) : (
-          <ul className="grid gap-1 text-sm">
-            {[...d.equipment]
-              .sort((a, b) => (a.equipment?.name ?? '').localeCompare(b.equipment?.name ?? ''))
-              .map((e, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="font-semibold w-8 shrink-0">{e.quantity}×</span>
-                  <span className="flex-1">{e.equipment?.name}</span>
-                  {e.issue !== 'none' && <span className="text-[var(--color-signal)] font-semibold">{ISSUE_LABEL[e.issue]}</span>}
-                </li>
-              ))}
-          </ul>
-        )}
-      </Card>
 
       {(ev.rating || ev.report) && (
         <Card title="Report">

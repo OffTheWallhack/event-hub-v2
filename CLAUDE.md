@@ -37,5 +37,6 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Krok 1: projekt + prihlasovanie cez Google + roly + schvaľovanie používateľov (Nastavenia)
 - [x] Krok 3: ICS sync (Edge Function `ics-sync` + pg_cron každých 15 min, tajomstvo pre cron v `app_settings.sync_cron_secret`) + kalendár + stránka eventu
 - [x] Krok 4: Kartóny + príchute (stránka /kartony, pohyby aj z eventu, inventúra = riadky `adjustment`; 5. 10. 2026 nastavený štartový stav Zero 1, ostatné 0)
-- [ ] Krok 5: Technika + sady
+- [x] Krok 5: Technika + sady (stránka /technika, technika ostáva po skupinách s počtom kusov – rozhodnutie Roberta; sady Zubor a Sugga; auto na evente pridá sadu)
+- [ ] Krok 6: Financie + nahrávanie dokladov do Drive
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky
