@@ -2,6 +2,8 @@ import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/
 import { Layout } from './components/Layout'
 import { Placeholder } from './pages/Placeholder'
 import { Users } from './pages/Users'
+import { Dashboard } from './pages/Dashboard'
+import { EventPage } from './pages/EventPage'
 
 type Ctx = { isAdmin: boolean }
 
@@ -26,8 +28,23 @@ const usersRoute = createRoute({
   component: Users,
 })
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  validateSearch: (s: Record<string, unknown>): { m?: string } =>
+    typeof s.m === 'string' ? { m: s.m } : {},
+  component: Dashboard,
+})
+
+const eventRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/event/$id',
+  component: EventPage,
+})
+
 const routeTree = rootRoute.addChildren([
-  page('/', 'Dashboard', 3),
+  dashboardRoute,
+  eventRoute,
   page('/todo', 'To-Do', 9),
   page('/technika', 'Technika', 5),
   page('/kartony', 'Kartóny', 4),

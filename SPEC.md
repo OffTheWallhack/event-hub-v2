@@ -9,7 +9,7 @@ Google Sheets/Excel sú len **exporty** v dnešných formátoch.
 ## 1. Stack
 - Vite + React + TypeScript + TanStack Router (SPA), Tailwind
 - Serverová logika ako Supabase Edge Functions (ICS sync, Drive, exporty, odkaz pre vodiča)
-- Hosting: Cloudflare Pages, adresa `*.pages.dev`, bez vlastnej domény
+- Hosting: Cloudflare Workers (statické assets), adresa `event-hub-v2.rdurica1995.workers.dev`, bez vlastnej domény
 - Databáza + prihlasovanie: Supabase projekt `event-hub-v2` (Free, región eu-central-1)
 - Súbory: Google Drive (osobný Gmail účet, OAuth refresh token — nie service account)
 - Tajomstvá len v env/secrets. Nikdy nie v kóde, komentároch ani v dokumentoch.
@@ -111,7 +111,7 @@ Prenáša sa **všetko**, vrátane väzieb: events (322), drivers (17), event_dr
 ## 10. Poradie stavby
 1. Projekt + prihlasovanie cez Google + roly + RLS ✅ hotové
 2. Schéma DB + migrácia dát ✅ hotové
-3. ICS sync + kalendár + stránka eventu
+3. ICS sync + kalendár + stránka eventu ✅ hotové
 4. Kartóny + príchute
 5. Technika + sady
 6. Financie + nahrávanie dokladov do Drive

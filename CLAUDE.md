@@ -6,7 +6,7 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 ## Stack
 - Vite + React 18 + TypeScript + TanStack Router (SPA, routy v `src/router.tsx`), Tailwind v4
 - Všetka serverová logika (ICS sync, Google Drive, exporty, odkaz pre vodiča) = **Supabase Edge Functions** v `supabase/functions/`. Žiadny vlastný server.
-- Hosting: Cloudflare Pages (statický build `dist/`, `public/_redirects` pre SPA), bez vlastnej domény
+- Hosting: Cloudflare Workers (statické assets z `dist/`, nastavenie v `wrangler.jsonc`, SPA fallback), adresa https://event-hub-v2.rdurica1995.workers.dev, nasadzuje sa automaticky z `main`
 - Verejné hodnoty (URL + publishable kľúč) sú v `src/lib/supabase.ts`, tajné nikdy
 - Supabase projekt `event-hub-v2`, ref `znsrokpaoczljisaoulu`, región eu-central-1, plán Free
 - Prihlasovanie: Supabase Auth, len Google provider (už nastavený)
@@ -35,5 +35,6 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Supabase projekt, schéma, RLS, migrácia dát
 - [x] Google OAuth nastavený v Supabase
 - [x] Krok 1: projekt + prihlasovanie cez Google + roly + schvaľovanie používateľov (Nastavenia)
-- [ ] Krok 3: ICS sync (Edge Function + cron) + kalendár + stránka eventu
+- [x] Krok 3: ICS sync (Edge Function `ics-sync` + pg_cron každých 15 min, tajomstvo pre cron v `app_settings.sync_cron_secret`) + kalendár + stránka eventu
+- [ ] Krok 4: Kartóny + príchute
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky
