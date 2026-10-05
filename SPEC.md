@@ -11,7 +11,7 @@ Google Sheets/Excel sú len **exporty** v dnešných formátoch.
 - Serverová logika ako Supabase Edge Functions (ICS sync, Drive, exporty, odkaz pre vodiča)
 - Hosting: Cloudflare Workers (statické assets), adresa `event-hub-v2.rdurica1995.workers.dev`, bez vlastnej domény
 - Databáza + prihlasovanie: Supabase projekt `event-hub-v2` (Free, región eu-central-1)
-- Súbory: Google Drive (osobný Gmail účet, OAuth refresh token — nie service account)
+- Súbory: Google Drive (osobný Gmail) cez Google Apps Script Web app — bez OAuth publikovania
 - Tajomstvá len v env/secrets. Nikdy nie v kóde, komentároch ani v dokumentoch.
 
 ## 2. Roly a prístup
@@ -98,7 +98,7 @@ Excel (.xlsx), v dnešných tvaroch, aby si ich Robert len prehodil do svojich s
 
 ## 8. Google Drive
 - Fotky: priečinok `Eventy/<YYYY-MM>/<DD.MM. Názov eventu>`, appka ho vytvorí sama a zapíše odkaz.
-- Účty: priečinok appky `Event Hub / Účty / YYYY-MM` (rozhodnutie 10/2026, scope drive.file). Súbory sa nahrávajú z appky, názov podľa vzoru vyššie.
+- Účty: priečinok appky `Event Hub / Účty / YYYY-MM` (rozhodnutie 10/2026, cez Apps Script). Súbory sa nahrávajú z appky, názov podľa vzoru vyššie.
 - Dodatočne sa dajú exporty a dáta nahrať aj do Basecampu (ručne, nízka priorita).
 
 ## 9. Migrácia zo starej appky (Lovable Cloud → nový Supabase)

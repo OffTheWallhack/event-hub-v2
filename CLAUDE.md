@@ -10,7 +10,7 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - Verejné hodnoty (URL + publishable kľúč) sú v `src/lib/supabase.ts`, tajné nikdy
 - Supabase projekt `event-hub-v2`, ref `znsrokpaoczljisaoulu`, región eu-central-1, plán Free
 - Prihlasovanie: Supabase Auth, len Google provider (už nastavený)
-- Súbory: Google Drive (osobný Gmail, OAuth refresh token, scope `drive.file` – appka vidí len svoje priečinky)
+- Súbory: Google Drive cez Google Apps Script (Web app „Execute as Me“ v Robertovom účte; OAuth app v Google Cloud sa nepublikuje, ostáva Testing len pre prihlasovanie)
 
 ## Databáza
 - Schéma už existuje a dáta zo starej appky sú prenesené (322 eventov atď.). **Nevytváraj tabuľky nanovo a nemaž dáta.**
@@ -38,6 +38,6 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Krok 3: ICS sync (Edge Function `ics-sync` + pg_cron každých 15 min, tajomstvo pre cron v `app_settings.sync_cron_secret`) + kalendár + stránka eventu
 - [x] Krok 4: Kartóny + príchute (stránka /kartony, pohyby aj z eventu, inventúra = riadky `adjustment`; 5. 10. 2026 nastavený štartový stav Zero 1, ostatné 0)
 - [x] Krok 5: Technika + sady (stránka /technika, technika ostáva po skupinách s počtom kusov – rozhodnutie Roberta; sady Zubor a Sugga; auto na evente pridá sadu)
-- [x] Krok 6: Financie (/financie, výdavky + výplaty, súhrn na dashboarde; vodiči a výplaty na evente) + Edge Function `drive` (scope drive.file, priečinok Event Hub / Účty / YYYY-MM; refresh token v `private_kv` = len service role; secrets GOOGLE_CLIENT_ID/SECRET)
+- [x] Krok 6: Financie (/financie, výdavky + výplaty, súhrn na dashboarde; vodiči a výplaty na evente) + Edge Function `drive` (cez Google Apps Script v Robertovom účte – Web app URL a tajný kľúč v `private_kv` = len service role; priečinok Event Hub / Účty / YYYY-MM; kód skriptu sa zobrazí v Nastaveniach)
 - [ ] Krok 7: Exporty (FINANCE a Event Car ako prvé)
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky

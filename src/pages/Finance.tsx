@@ -18,7 +18,7 @@ export function Finance() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [payouts, setPayouts] = useState<MonthPayout[]>([])
   const [form, setForm] = useState<Expense | 'new' | null>(null)
-  const [drive, setDrive] = useState<{ configured: boolean; connected: boolean } | null>(null)
+  const [drive, setDrive] = useState<{ connected: boolean } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
 
