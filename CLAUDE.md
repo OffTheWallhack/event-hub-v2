@@ -1,0 +1,39 @@
+# Event Hub v2 — pokyny pre Claude Code
+
+Interná appka pre Event Car Drivera (Red Bull). Celý spec je v `SPEC.md`, čítaj ho pred každou úlohou.
+Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jednoducho, bez zbytočného žargónu.
+
+## Stack
+- Vite + React 18 + TypeScript + TanStack Router (SPA, routy v `src/router.tsx`), Tailwind v4
+- Všetka serverová logika (ICS sync, Google Drive, exporty, odkaz pre vodiča) = **Supabase Edge Functions** v `supabase/functions/`. Žiadny vlastný server.
+- Hosting: Cloudflare Pages (statický build `dist/`, `public/_redirects` pre SPA), bez vlastnej domény
+- Verejné hodnoty (URL + publishable kľúč) sú v `src/lib/supabase.ts`, tajné nikdy
+- Supabase projekt `event-hub-v2`, ref `znsrokpaoczljisaoulu`, región eu-central-1, plán Free
+- Prihlasovanie: Supabase Auth, len Google provider (už nastavený)
+- Súbory: Google Drive (osobný Gmail, OAuth refresh token)
+
+## Databáza
+- Schéma už existuje a dáta zo starej appky sú prenesené (322 eventov atď.). **Nevytváraj tabuľky nanovo a nemaž dáta.**
+- Migrácie sú v `supabase/migrations/`. Každá zmena schémy = nová migrácia s RLS v tom istom súbore.
+- Roly v `profiles.role`: `pending | driver | admin`. Funkcie `is_admin()` a `is_approved()` použi v RLS.
+- `rdurica1995@gmail.com` sa pri prvom prihlásení stane adminom automaticky (trigger `handle_new_user`).
+- Financie (`expenses`, `driver_payouts`), `briefing_tokens`, `app_settings` = len admin.
+- Kartóny: stav sa **počíta** z `carton_movements` (view `carton_stock`, len riadky `counts_in_stock = true`). Nikdy neukladaj stav ručne.
+- `events` polia z Basecampu (`ical_uid, title, start_date, end_date, basecamp_notes, basecamp_url`) mení len ICS sync.
+- Event zmiznutý z ICS → `status='cancelled'`, `deleted_from_basecamp=true`. Nikdy nemaž.
+- Po zmene schémy spusti Supabase security advisors.
+
+## Pravidlá
+- Žiadne heslá, kľúče, client secrets ani ICS odkaz v kóde, komentároch ani v md súboroch. Len `.env` / Cloudflare secrets. `.env*` je v `.gitignore`.
+- Service role kľúč len na serveri, nikdy v prehliadači.
+- UI po slovensky, mobile-first (používa sa hlavne na iPhone).
+- Rob jeden krok z `SPEC.md` kapitoly 10 naraz. Na konci kroku: over, že `npm run build` prechádza, commitni s krátkou správou a v 3 vetách napíš, čo je hotové a čo má Robert vyskúšať.
+- Najprv funkčný základ, žiadne extra featury navyše.
+- Keď si nie si istý biznis pravidlom, opýtaj sa, nehádaj.
+
+## Stav (október 2026)
+- [x] Supabase projekt, schéma, RLS, migrácia dát
+- [x] Google OAuth nastavený v Supabase
+- [x] Krok 1: projekt + prihlasovanie cez Google + roly + schvaľovanie používateľov (Nastavenia)
+- [ ] Krok 3: ICS sync (Edge Function + cron) + kalendár + stránka eventu
+- [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky
