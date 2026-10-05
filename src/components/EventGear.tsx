@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
+import { type EqCategory, CATEGORIES, CATEGORY_LABEL, eqIcon, splitName } from '../lib/equipment'
 
 type Vehicle = { id: string; name: string; sort_order: number }
 type EvVehicle = { vehicle_id: string; is_primary: boolean }
-type EqItem = { id: string; name: string; quantity: number; active: boolean }
-type EvEquip = { equipment_id: string; quantity: number; issue: string; equipment: { name: string } | null }
+type EqItem = { id: string; name: string; category: EqCategory; quantity: number; qty_broken: number; active: boolean }
+type EvEquip = { equipment_id: string; quantity: number; issue: string }
 type SetItems = { vehicle_id: string | null; equipment_set_items: { equipment_id: string; quantity: number }[] }
 
 const ISSUE_LABEL: Record<string, string> = { broken: 'pokazené', not_returned: 'nevrátené' }
@@ -17,7 +18,6 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
   const [evEq, setEvEq] = useState<EvEquip[]>([])
   const [editVeh, setEditVeh] = useState(false)
   const [editEq, setEditEq] = useState(false)
-  const [pick, setPick] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
@@ -26,15 +26,15 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
     Promise.all([
       supabase.from('vehicles').select('id, name, sort_order').eq('active', true).order('sort_order'),
       supabase.from('event_vehicles').select('vehicle_id, is_primary').eq('event_id', eventId),
-      supabase.from('equipment').select('id, name, quantity, active').order('name'),
-      supabase.from('event_equipment').select('equipment_id, quantity, issue, equipment(name)').eq('event_id', eventId),
+      supabase.from('equipment').select('id, name, category, quantity, qty_broken, active').order('name'),
+      supabase.from('event_equipment').select('equipment_id, quantity, issue').eq('event_id', eventId),
     ]).then(([v, ev, c, ee]) => {
       const err = v.error ?? ev.error ?? c.error ?? ee.error
       if (err) return setError(err.message)
       setVehicles(v.data as Vehicle[])
       setEvVeh(ev.data as EvVehicle[])
       setCatalog(c.data as EqItem[])
-      setEvEq((ee.data as unknown as EvEquip[]).sort((a, b) => (a.equipment?.name ?? '').localeCompare(b.equipment?.name ?? '')))
+      setEvEq(ee.data as EvEquip[])
     })
   }, [eventId, reload])
 
@@ -71,26 +71,38 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
     refresh()
   }
 
+  // Zmena počtu kusov na evente (0 = odobrať). Hneď sa prekreslí, pri chybe sa načíta znova.
   async function setQty(equipmentId: string, q: number) {
-    const max = catalog.find((c) => c.id === equipmentId)?.quantity ?? 99
-    const res = q <= 0
+    const total = catalog.find((c) => c.id === equipmentId)?.quantity ?? 99
+    const next = Math.max(0, Math.min(q, Math.max(total, 1)))
+    const cur = evEq.find((e) => e.equipment_id === equipmentId)
+    if ((cur?.quantity ?? 0) === next) return
+    setEvEq((list) =>
+      next === 0
+        ? list.filter((e) => e.equipment_id !== equipmentId)
+        : cur
+          ? list.map((e) => (e.equipment_id === equipmentId ? { ...e, quantity: next } : e))
+          : [...list, { equipment_id: equipmentId, quantity: next, issue: 'none' }],
+    )
+    const res = next === 0
       ? await supabase.from('event_equipment').delete().eq('event_id', eventId).eq('equipment_id', equipmentId)
-      : await supabase.from('event_equipment').update({ quantity: Math.min(q, Math.max(max, 1)) }).eq('event_id', eventId).eq('equipment_id', equipmentId)
-    if (!fail(res.error)) refresh()
-  }
-
-  async function addItem() {
-    if (!pick) return
-    if (fail((await supabase.from('event_equipment').insert({ event_id: eventId, equipment_id: pick, quantity: 1 })).error)) return
-    setPick('')
-    refresh()
+      : cur
+        ? await supabase.from('event_equipment').update({ quantity: next }).eq('event_id', eventId).eq('equipment_id', equipmentId)
+        : await supabase.from('event_equipment').insert({ event_id: eventId, equipment_id: equipmentId, quantity: next })
+    if (fail(res.error)) refresh()
   }
 
   const evVehNames = vehicles
     .filter((v) => evVeh.some((x) => x.vehicle_id === v.id))
     .sort((a, b) => Number(isPrimary(b.id)) - Number(isPrimary(a.id)))
   function isPrimary(id: string) { return evVeh.find((x) => x.vehicle_id === id)?.is_primary ?? false }
-  const available = catalog.filter((c) => c.active && !evEq.some((e) => e.equipment_id === c.id))
+  const onEvent = new Map(evEq.map((e) => [e.equipment_id, e]))
+  // v úprave: všetka aktívna technika; inak len to, čo je na evente
+  const groups = CATEGORIES.map((cat) => ({
+    cat,
+    items: catalog.filter((c) => c.category === cat && (editEq ? c.active || onEvent.has(c.id) : onEvent.has(c.id))),
+  })).filter((g) => g.items.length > 0)
+  const totalPieces = evEq.reduce((s, e) => s + e.quantity, 0)
 
   return (
     <>
@@ -135,40 +147,63 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
       </Card>
 
       <Card
-        title="Technika"
+        title={`Technika${totalPieces ? ` · ${totalPieces} ks` : ''}`}
         right={isAdmin && <button onClick={() => setEditEq(!editEq)} className="h-9 px-3 rounded-lg border line text-sm font-medium">{editEq ? 'Hotovo' : 'Upraviť'}</button>}
       >
-        {evEq.length === 0 && !editEq ? (
+        {groups.length === 0 ? (
           <p className="muted text-sm">Žiadna.</p>
         ) : (
-          <ul className="grid gap-1 text-sm">
-            {evEq.map((e) => (
-              <li key={e.equipment_id} className="flex items-center gap-2 min-h-9">
-                {editEq ? (
-                  <span className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => setQty(e.equipment_id, e.quantity - 1)} className="w-8 h-8 rounded-lg border line" aria-label="Menej">−</button>
-                    <span className="w-6 text-center font-semibold">{e.quantity}</span>
-                    <button onClick={() => setQty(e.equipment_id, e.quantity + 1)} className="w-8 h-8 rounded-lg border line" aria-label="Viac">+</button>
-                  </span>
-                ) : (
-                  <span className="font-semibold w-8 shrink-0">{e.quantity}×</span>
-                )}
-                <span className="flex-1 min-w-0 truncate">{e.equipment?.name}</span>
-                {e.issue !== 'none' && <span className="text-[var(--color-signal)] font-semibold">{ISSUE_LABEL[e.issue]}</span>}
-              </li>
+          <div className="grid gap-4">
+            {editEq && <p className="text-xs muted">Ťukni na kus = +1, mínus = −1. Číslo vpravo hore je počet na evente / koľko máme.</p>}
+            {groups.map((g) => (
+              <div key={g.cat}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider muted mb-1.5">{CATEGORY_LABEL[g.cat]}</h3>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {g.items.map((c) => {
+                    const on = onEvent.get(c.id)
+                    const q = on?.quantity ?? 0
+                    const [short] = splitName(c.name)
+                    return (
+                      <div
+                        key={c.id}
+                        className={'relative rounded-xl border-2 text-center select-none ' + (q > 0 ? 'border-[var(--color-signal)] bg-[color-mix(in_srgb,var(--color-signal)_10%,var(--card))]' : 'line ' + (editEq ? '' : 'opacity-60'))}
+                      >
+                        <button
+                          type="button"
+                          disabled={!editEq}
+                          onClick={() => setQty(c.id, q + 1)}
+                          className="w-full pt-3 pb-2 px-1 flex flex-col items-center gap-1"
+                        >
+                          <span className="text-3xl leading-none">{eqIcon(c)}</span>
+                          <span className="text-[11px] font-semibold leading-tight line-clamp-2">{short}</span>
+                        </button>
+                        <span className={'absolute top-1 right-1 text-[10px] font-bold px-1 rounded ' + (q > 0 ? 'bg-[var(--color-signal)] text-white' : 'muted')}>
+                          {q}/{c.quantity}
+                        </span>
+                        {on && on.issue !== 'none' && (
+                          <span className="block text-[10px] font-bold text-[var(--color-signal)] -mt-1 mb-1">{ISSUE_LABEL[on.issue]}</span>
+                        )}
+                        {c.qty_broken > 0 && editEq && (
+                          <span className="block text-[10px] text-[var(--color-signal)] -mt-1 mb-1">{c.qty_broken} pokaz.</span>
+                        )}
+                        {editEq && q > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setQty(c.id, q - 1)}
+                            className="absolute top-1 left-1 w-7 h-7 rounded-full bg-[var(--color-ink)] text-white font-bold leading-none"
+                            aria-label="Menej"
+                          >
+                            −
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
             ))}
-          </ul>
-        )}
-        {editEq && (
-          <div className="flex gap-2 mt-3">
-            <select className="flex-1 min-w-0 h-10 px-2 rounded-lg border line bg-transparent text-sm" value={pick} onChange={(e) => setPick(e.target.value)}>
-              <option value="">+ pridať techniku…</option>
-              {available.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button onClick={addItem} disabled={!pick} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-50">Pridať</button>
           </div>
         )}
-        {editEq && <p className="text-xs muted mt-2">Znížením na 0 sa položka z eventu odoberie.</p>}
       </Card>
     </>
   )

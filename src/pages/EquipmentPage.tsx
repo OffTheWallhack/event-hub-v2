@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import {
   type EqCategory, type EqStatus, type Equipment,
-  CATEGORIES, CATEGORY_LABEL, EQ_COLUMNS, NEEDS_HOLDER, QUICK_STATUSES, STATUS_COLOR, STATUS_LABEL,
+  CATEGORIES, CATEGORY_LABEL, EQ_COLUMNS, NEEDS_HOLDER, QUICK_STATUSES, STATUS_COLOR, STATUS_LABEL, eqIcon, splitName,
 } from '../lib/equipment'
 import { durationDays, fmtRange } from '../lib/events'
 
@@ -114,8 +114,11 @@ function ItemCard({ e, usage, isAdmin, open, onToggle, onSaved }: {
   return (
     <>
       <button onClick={isAdmin ? onToggle : undefined} className="w-full text-left flex gap-3 items-start">
-        <span className="w-10 h-10 shrink-0 rounded-lg grid place-items-center font-bold text-white text-sm" style={{ background: STATUS_COLOR[e.status] }}>
-          {e.quantity}×
+        <span className="relative w-12 h-12 shrink-0 rounded-xl grid place-items-center text-2xl border-2" style={{ borderColor: STATUS_COLOR[e.status] }}>
+          {eqIcon(e)}
+          <span className="absolute -bottom-1.5 -right-1.5 min-w-6 h-6 px-1 rounded-full grid place-items-center text-[11px] font-bold text-white" style={{ background: STATUS_COLOR[e.status] }}>
+            {e.quantity}×
+          </span>
         </span>
         <span className="flex-1 min-w-0">
           <span className="block font-semibold leading-tight">{name}</span>
@@ -374,10 +377,4 @@ function Badge({ color, children }: { color: string; children: ReactNode }) {
   return (
     <span className="px-1.5 py-0.5 rounded font-semibold text-white" style={{ background: color }}>{children}</span>
   )
-}
-
-// „Cooler: Small“ → ['Small', 'Cooler']
-function splitName(n: string): [string, string | null] {
-  const m = /^([^:]{2,20}):\s*(.+)$/.exec(n)
-  return m ? [m[2], m[1]] : [n, null]
 }

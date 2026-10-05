@@ -50,3 +50,34 @@ export const NEEDS_HOLDER: EqStatus[] = ['borrowed', 'in_rent', 'rented_out']
 
 export const EQ_COLUMNS =
   'id, name, category, quantity, qty_broken, qty_borrowed, status, status_note, held_by, status_event_id, notes, active'
+
+// Ikonka podľa názvu, inak podľa kategórie.
+const ICONS: [RegExp, string][] = [
+  [/cdj/i, '💿'],
+  [/mix|konzol|djm/i, '🎚️'],
+  [/mic/i, '🎤'],
+  [/sub|repro|rcf|montarbo|\bdb\b/i, '🔊'],
+  [/stojan|tyc|tyč|tripod|cikcak|rack/i, '🗼'],
+  [/cooler|chlad/i, '🧊'],
+  [/desk/i, '🎧'],
+  [/neon/i, '💡'],
+  [/slnecnik|slnečník/i, '⛱️'],
+  [/kock/i, '🧱'],
+  [/tabul/i, '🪧'],
+  [/nalep|logo/i, '🏷️'],
+  [/branding|9m/i, '🚩'],
+  [/gener/i, '⚡'],
+  [/kompres/i, '💨'],
+  [/playstation|ps\d/i, '🎮'],
+]
+const CAT_ICON: Record<EqCategory, string> = { coolers: '🧊', audio: '🔊', branding: '🚩', others: '📦' }
+
+export function eqIcon(e: Pick<Equipment, 'name' | 'category'>): string {
+  return ICONS.find(([re]) => re.test(e.name))?.[1] ?? CAT_ICON[e.category]
+}
+
+// „Cooler: Small“ → ['Small', 'Cooler']
+export function splitName(n: string): [string, string | null] {
+  const m = /^([^:]{2,20}):\s*(.+)$/.exec(n)
+  return m ? [m[2], m[1]] : [n, null]
+}
