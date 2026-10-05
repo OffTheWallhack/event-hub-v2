@@ -2,6 +2,8 @@ import { Link, useParams } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { MovementForm } from '../components/MovementForm'
+import type { Flavor } from '../lib/cartons'
 import {
   type Department, type EventRow, type EventStatus, type EventType,
   DEPT_LABEL, STATUS_LABEL, TYPE_COLOR, TYPE_LABEL, TYPE_TEXT,
@@ -32,6 +34,7 @@ export function EventPage() {
   const [d, setD] = useState<Details | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [addCartons, setAddCartons] = useState<Flavor[] | null>(null)
 
   async function load() {
     const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle()
@@ -61,6 +64,15 @@ export function EventPage() {
     })
   }
   useEffect(() => { load() }, [id, isAdmin])
+
+  async function openCartons() {
+    const { data } = await supabase
+      .from('flavors')
+      .select('id, name, label, color_bg, color_text, color_border, sort_order, active')
+      .eq('active', true)
+      .order('sort_order')
+    setAddCartons((data ?? []) as Flavor[])
+  }
 
   if (error) return <p className="text-[var(--color-signal)]">{error}</p>
   if (!ev || !d) return <p className="muted">Načítavam…</p>
@@ -174,8 +186,20 @@ export function EventPage() {
         </Card>
       )}
 
-      <Card title="Kartóny">
-        {cartons.length === 0 ? (
+      <Card
+        title="Kartóny"
+        right={isAdmin && !addCartons && (
+          <button onClick={openCartons} className="h-9 px-3 rounded-lg border line text-sm font-medium">+ Kartóny</button>
+        )}
+      >
+        {addCartons ? (
+          <MovementForm
+            flavors={addCartons}
+            fixedEventId={ev.id}
+            fixedEventDay={startDay(ev)}
+            onDone={(saved) => { setAddCartons(null); if (saved) load() }}
+          />
+        ) : cartons.length === 0 ? (
           <p className="muted text-sm">Žiadne.</p>
         ) : (
           <ul className="flex flex-wrap gap-2 text-sm">

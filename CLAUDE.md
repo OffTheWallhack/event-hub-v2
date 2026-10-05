@@ -20,7 +20,7 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - Financie (`expenses`, `driver_payouts`), `briefing_tokens`, `app_settings` = len admin.
 - Kartóny: stav sa **počíta** z `carton_movements` (view `carton_stock`, len riadky `counts_in_stock = true`). Nikdy neukladaj stav ručne.
 - `events` polia z Basecampu (`ical_uid, title, start_date, end_date, basecamp_notes, basecamp_url`) mení len ICS sync.
-- Event zmiznutý z ICS → `status='cancelled'`, `deleted_from_basecamp=true`. Nikdy nemaž.
+- Event zmiznutý z ICS → `status='cancelled'` (aj keď bol `done`, Basecamp rozhoduje), `deleted_from_basecamp=true`. Nikdy nemaž. Keď sa vráti, ide na `planned`.
 - Po zmene schémy spusti Supabase security advisors.
 
 ## Pravidlá
@@ -36,5 +36,6 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Google OAuth nastavený v Supabase
 - [x] Krok 1: projekt + prihlasovanie cez Google + roly + schvaľovanie používateľov (Nastavenia)
 - [x] Krok 3: ICS sync (Edge Function `ics-sync` + pg_cron každých 15 min, tajomstvo pre cron v `app_settings.sync_cron_secret`) + kalendár + stránka eventu
-- [ ] Krok 4: Kartóny + príchute
+- [x] Krok 4: Kartóny + príchute (stránka /kartony, pohyby aj z eventu, inventúra = riadky `adjustment`; 5. 10. 2026 nastavený štartový stav Zero 1, ostatné 0)
+- [ ] Krok 5: Technika + sady
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky

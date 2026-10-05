@@ -158,8 +158,8 @@ async function sync() {
   for (const r of rows!) {
     if (seen.has(r.ical_uid as string) || r.deleted_from_basecamp) continue
     if (String(r.start_date).slice(0, 10) < IMPORT_FROM) continue
-    const patch: Record<string, unknown> = { deleted_from_basecamp: true, deleted_from_basecamp_at: now }
-    if (r.status === 'planned') patch.status = 'cancelled'
+    // Basecamp rozhoduje: čo v ňom nie je, je zrušené (aj keď bolo hotové).
+    const patch = { deleted_from_basecamp: true, deleted_from_basecamp_at: now, status: 'cancelled' }
     const { error } = await admin.from('events').update(patch).eq('id', r.id)
     if (error) throw error
     removed++

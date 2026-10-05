@@ -72,7 +72,7 @@ Všetky tabuľky majú `id uuid`, `created_at`, `updated_at`.
 - Zdroj len ICS odkaz z Basecampu (v secrete `BASECAMP_ICAL_URL`, žiadne API).
 - Beh: cron (každých ~15 min) + tlačidlo „Synchronizovať“.
 - Párovanie podľa `ical_uid`. Zmena času/názvu/poznámok prepíše len Basecamp polia, všetko ostatné ostáva.
-- Zmiznutý event → `cancelled`, nič sa nemaže.
+- Zmiznutý event → `cancelled` (aj hotový), nič sa nemaže.
 - Import od `2026-01-01` (aj staršie z migrácie).
 
 ## 5. Obrazovky
@@ -112,7 +112,7 @@ Prenáša sa **všetko**, vrátane väzieb: events (322), drivers (17), event_dr
 1. Projekt + prihlasovanie cez Google + roly + RLS ✅ hotové
 2. Schéma DB + migrácia dát ✅ hotové
 3. ICS sync + kalendár + stránka eventu ✅ hotové
-4. Kartóny + príchute
+4. Kartóny + príchute ✅ hotové
 5. Technika + sady
 6. Financie + nahrávanie dokladov do Drive
 7. Exporty (FINANCE a Event Car ako prvé)
