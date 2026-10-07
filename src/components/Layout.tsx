@@ -2,6 +2,7 @@ import { Link, Outlet } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { applyTheme, getTheme, type Theme } from '../lib/theme'
+import { Reminders } from './Reminders'
 
 const NAV: { to: string; label: string; admin?: boolean }[] = [
   { to: '/', label: 'Dashboard' },
@@ -56,6 +57,7 @@ export function Layout() {
         </div>
       </header>
       <main className="flex-1 max-w-6xl w-full mx-auto px-3 py-5">
+        {isAdmin && <Reminders />}
         <Outlet />
       </main>
     </div>

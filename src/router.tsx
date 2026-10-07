@@ -8,6 +8,8 @@ import { Cartons } from './pages/Cartons'
 import { EquipmentPage } from './pages/EquipmentPage'
 import { Finance } from './pages/Finance'
 import { ExportPage } from './pages/ExportPage'
+import { Todos } from './pages/Todos'
+import { Garage } from './pages/Garage'
 
 type Ctx = { isAdmin: boolean }
 
@@ -49,10 +51,10 @@ const eventRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
   eventRoute,
-  page('/todo', 'To-Do', 9),
+  createRoute({ getParentRoute: () => rootRoute, path: '/todo', component: Todos }),
   createRoute({ getParentRoute: () => rootRoute, path: '/technika', component: EquipmentPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/kartony', component: Cartons }),
-  page('/garaz', 'Garáž', 9),
+  createRoute({ getParentRoute: () => rootRoute, path: '/garaz', component: Garage }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/financie',

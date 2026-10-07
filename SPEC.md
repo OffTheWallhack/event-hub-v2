@@ -117,7 +117,7 @@ Prenáša sa **všetko**, vrátane väzieb: events (322), drivers (17), event_dr
 6. Financie + nahrávanie dokladov do Drive ✅ hotové
 7. Exporty (FINANCE a Event Car ako prvé) ✅ hotové
 8. Odkaz/PDF pre vodiča ✅ hotové
-9. Garáž + to-dos + pripomienky (Telegram/Grok bot)
+9. Garáž + to-dos + pripomienky (Telegram/Grok bot) ✅ hotové, bez Telegramu
 10. Report po evente, doladenie
 
 ## 11. Pravidlá pre kódenie (Claude Code)

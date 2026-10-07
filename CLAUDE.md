@@ -41,5 +41,6 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Krok 6: Financie (/financie, výdavky + výplaty, súhrn na dashboarde; vodiči a výplaty na evente) + Edge Function `drive` (cez Google Apps Script v Robertovom účte – Web app URL a tajný kľúč v `private_kv` = len service role; priečinok Event Hub / Účty / YYYY-MM; kód skriptu sa zobrazí v Nastaveniach)
 - [x] Krok 7: Exporty (stránka /export, generuje sa v prehliadači cez exceljs, samostatné súbory): Event Car (+ hárky TECHNIKA), TECHNIKA, FINANCE, DRIVERS, PRODUCT
 - [x] Krok 8: Odkaz a PDF pre externého vodiča (verejná stránka /brief/<token>, Edge Function `brief` vracia len bezpečné polia; z poznámok z Basecampu sa filtrujú riadky so € a interné odkazy; PDF = tlač stránky; odkaz vytvára admin na evente, platí do konca eventu + 3 dni, aspoň 1 deň)
-- [ ] Krok 9: Garáž, to-dos, pripomienky
+- [x] Krok 9: To-Do (/todo, kompaktný zoznam, rozsahy general/garage/vehicle) + Garáž (/garaz: autá, poznámky k autu, úlohy, servisy) + pripomienky v appke (`todos.remind_at`, banner len pre admina, beží pri otvorenej appke). Telegram/Grok bot a kalendárový odkaz do iPhonu zatiaľ nie sú. Pri migrácii sa stratila väzba `todos.vehicle_id` – 7. 10. 2026 obnovená zo starej appky
+- [ ] Krok 10: Report po evente a doladenie
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky
