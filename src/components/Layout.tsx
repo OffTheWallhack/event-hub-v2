@@ -33,6 +33,9 @@ export function Layout() {
           <Link to="/" className="display text-2xl font-bold tracking-tight flex-1">
             Event Hub
           </Link>
+          <Link to="/info" className="text-xs px-2 py-1 rounded-lg border line shrink-0 muted" title="Info o verzii a stave">
+            ⓘ v{__APP_VERSION__}
+          </Link>
           <button onClick={toggleTheme} className="text-sm px-2 py-1 rounded-lg border line shrink-0" aria-label="Denný/nočný režim">
             {theme === 'dark' ? '☀︎' : '☾'}
           </button>
