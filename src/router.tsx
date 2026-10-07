@@ -7,6 +7,7 @@ import { EventPage } from './pages/EventPage'
 import { Cartons } from './pages/Cartons'
 import { EquipmentPage } from './pages/EquipmentPage'
 import { Finance } from './pages/Finance'
+import { ExportPage } from './pages/ExportPage'
 
 type Ctx = { isAdmin: boolean }
 
@@ -58,7 +59,7 @@ const routeTree = rootRoute.addChildren([
     beforeLoad: ({ context }) => { if (!(context as Ctx).isAdmin) throw redirect({ to: '/' }) },
     component: Finance,
   }),
-  page('/export', 'Export', 7),
+  createRoute({ getParentRoute: () => rootRoute, path: '/export', component: ExportPage }),
   usersRoute,
 ])
 

@@ -39,5 +39,5 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Krok 4: Kartóny + príchute (stránka /kartony, pohyby aj z eventu, inventúra = riadky `adjustment`; 5. 10. 2026 nastavený štartový stav Zero 1, ostatné 0)
 - [x] Krok 5: Technika + sady (stránka /technika, technika ostáva po skupinách s počtom kusov – rozhodnutie Roberta; sady Zubor a Sugga; auto na evente pridá sadu)
 - [x] Krok 6: Financie (/financie, výdavky + výplaty, súhrn na dashboarde; vodiči a výplaty na evente) + Edge Function `drive` (cez Google Apps Script v Robertovom účte – Web app URL a tajný kľúč v `private_kv` = len service role; priečinok Event Hub / Účty / YYYY-MM; kód skriptu sa zobrazí v Nastaveniach)
-- [ ] Krok 7: Exporty (FINANCE a Event Car ako prvé)
+- [~] Krok 7: Exporty (stránka /export, generuje sa v prehliadači cez exceljs, samostatné súbory). Hotové: Event Car (hárky EVENT CAR/SUPPORT/ADHOC) a FINANCE. Ostáva: TECHNIKA, DRIVERS, PRODUCT
 - [ ] Presun súborov (fotky, bločky, obrázky) zo starej appky
