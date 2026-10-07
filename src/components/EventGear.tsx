@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { type EqCategory, CATEGORIES, CATEGORY_LABEL, eqIcon, splitName } from '../lib/equipment'
+import { Photo } from './Photo'
 
 type Vehicle = { id: string; name: string; sort_order: number }
 type EvVehicle = { vehicle_id: string; is_primary: boolean }
-type EqItem = { id: string; name: string; category: EqCategory; quantity: number; qty_broken: number; active: boolean }
+type EqItem = { id: string; name: string; category: EqCategory; quantity: number; qty_broken: number; active: boolean; photo_path: string | null }
 type EvEquip = { equipment_id: string; quantity: number; issue: string }
 type SetItems = { vehicle_id: string | null; equipment_set_items: { equipment_id: string; quantity: number }[] }
 
@@ -26,7 +27,7 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
     Promise.all([
       supabase.from('vehicles').select('id, name, sort_order').eq('active', true).order('sort_order'),
       supabase.from('event_vehicles').select('vehicle_id, is_primary').eq('event_id', eventId),
-      supabase.from('equipment').select('id, name, category, quantity, qty_broken, active').order('name'),
+      supabase.from('equipment').select('id, name, category, quantity, qty_broken, active, photo_path').order('name'),
       supabase.from('event_equipment').select('equipment_id, quantity, issue').eq('event_id', eventId),
     ]).then(([v, ev, c, ee]) => {
       const err = v.error ?? ev.error ?? c.error ?? ee.error
@@ -174,7 +175,7 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
                           onClick={() => setQty(c.id, q + 1)}
                           className="w-full pt-3 pb-2 px-1 flex flex-col items-center gap-1"
                         >
-                          <span className="text-3xl leading-none">{eqIcon(c)}</span>
+                          <Photo kind="equipment-photos" path={c.photo_path} alt={c.name} className="w-12 h-12 object-cover rounded-lg" fallback={<span className="text-3xl leading-none">{eqIcon(c)}</span>} />
                           <span className="text-[11px] font-semibold leading-tight line-clamp-2">{short}</span>
                         </button>
                         <span className={'absolute top-1 right-1 text-[10px] font-bold px-1 rounded ' + (q > 0 ? 'bg-[var(--color-signal)] text-white' : 'muted')}>

@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
+import { Photo, PhotoUpload } from '../components/Photo'
 import type { VehicleOpt } from '../lib/todos'
 import { fmtDay, todayLocal } from '../lib/events'
 
-type Vehicle = VehicleOpt & { full_name: string | null; equipment_notes: string | null; is_generic: boolean }
+type Vehicle = VehicleOpt & { full_name: string | null; equipment_notes: string | null; is_generic: boolean; image_path: string | null; custom_photo_path: string | null }
 type Service = { id: string; date: string | null; description: string }
 
 const GARAGE = 'garage'
@@ -19,7 +20,7 @@ export function Garage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('vehicles').select('id, name, full_name, equipment_notes, is_generic').eq('active', true).order('sort_order'),
+      supabase.from('vehicles').select('id, name, full_name, equipment_notes, is_generic, image_path, custom_photo_path').eq('active', true).order('sort_order'),
       supabase.from('todos').select('scope, vehicle_id').neq('status', 'done').range(0, 999),
     ]).then(([v, t]) => {
       const list = (v.data ?? []) as Vehicle[]
@@ -61,8 +62,28 @@ export function Garage() {
       ) : vehicle ? (
         <>
           <div className="card p-4 min-w-0">
+            <Photo
+              kind="vehicle-photos"
+              path={vehicle.custom_photo_path}
+              alt={vehicle.name}
+              className="w-full max-h-52 object-contain rounded-xl mb-3"
+            />
             <h2 className="display text-2xl font-bold">{vehicle.name}</h2>
             {vehicle.full_name && <p className="text-sm muted">{vehicle.full_name}</p>}
+            {isAdmin && (
+              <div className="mt-2">
+                <PhotoUpload
+                  kind="vehicle-photos"
+                  id={vehicle.id}
+                  label={vehicle.custom_photo_path ? 'Zmeniť fotku auta' : 'Nahrať fotku auta'}
+                  onUploaded={async (path) => {
+                    const { error } = await supabase.from('vehicles').update({ custom_photo_path: path }).eq('id', vehicle.id)
+                    if (error) throw new Error(error.message)
+                    refresh()
+                  }}
+                />
+              </div>
+            )}
             <Notes key={vehicle.id} v={vehicle} isAdmin={isAdmin} />
           </div>
 

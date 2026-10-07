@@ -9,6 +9,7 @@ export type Flavor = {
   color_border: string | null
   sort_order: number
   active: boolean
+  photo_path: string | null
 }
 
 export type MoveType = 'delivery' | 'returned' | 'event' | 'opened_garage' | 'damaged' | 'adjustment'

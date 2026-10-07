@@ -17,6 +17,7 @@ export type Equipment = {
   status_event_id: string | null
   notes: string | null
   active: boolean
+  photo_path: string | null
 }
 
 export const CATEGORY_LABEL: Record<EqCategory, string> = {
@@ -49,7 +50,7 @@ export const STATUS_COLOR: Record<EqStatus, string> = {
 export const NEEDS_HOLDER: EqStatus[] = ['borrowed', 'in_rent', 'rented_out']
 
 export const EQ_COLUMNS =
-  'id, name, category, quantity, qty_broken, qty_borrowed, status, status_note, held_by, status_event_id, notes, active'
+  'id, name, category, quantity, qty_broken, qty_borrowed, status, status_note, held_by, status_event_id, notes, active, photo_path'
 
 // Ikonka podľa názvu, inak podľa kategórie.
 const ICONS: [RegExp, string][] = [

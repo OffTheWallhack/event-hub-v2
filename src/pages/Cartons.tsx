@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { MovementForm } from '../components/MovementForm'
+import { Photo, PhotoUpload } from '../components/Photo'
 import { type Flavor, type Movement, MOVE_LABEL, flavorName, flavorStyle } from '../lib/cartons'
 import { DEPT_LABEL, type Department, fmtDay, todayLocal } from '../lib/events'
 
@@ -22,7 +23,7 @@ export function Cartons() {
   useEffect(() => {
     let alive = true
     Promise.all([
-      supabase.from('flavors').select('id, name, label, color_bg, color_text, color_border, sort_order, active').order('sort_order').order('name'),
+      supabase.from('flavors').select('id, name, label, color_bg, color_text, color_border, sort_order, active, photo_path').order('sort_order').order('name'),
       supabase.from('carton_stock').select('flavor_id, cartons'),
       supabase
         .from('carton_movements')
@@ -72,9 +73,10 @@ export function Cartons() {
         {tiles.map((f) => {
           const n = stock[f.id] ?? 0
           return (
-            <div key={f.id} className={'rounded-xl border-2 p-2 ' + (n === 0 ? 'opacity-45' : '')} style={flavorStyle(f)}>
-              <p className="text-xs font-semibold truncate">{flavorName(f)}</p>
-              <p className="display text-3xl font-bold leading-none mt-1">{n}</p>
+            <div key={f.id} className={'relative overflow-hidden rounded-xl border-2 p-2 min-h-[4.5rem] ' + (n === 0 ? 'opacity-45' : '')} style={flavorStyle(f)}>
+              <p className="text-xs font-semibold truncate relative z-10 max-w-[70%]">{flavorName(f)}</p>
+              <p className="display text-3xl font-bold leading-none mt-1 relative z-10">{n}</p>
+              <Photo kind="flavor-photos" path={f.photo_path} alt={flavorName(f)} className="absolute right-0.5 bottom-0.5 h-[85%] w-auto max-w-[55%] object-contain drop-shadow" />
             </div>
           )
         })}
@@ -284,9 +286,25 @@ function FlavorAdmin({ flavors, onChanged }: { flavors: Flavor[]; onChanged: () 
             <input type="checkbox" checked={edit.active ?? true} onChange={(e) => setEdit({ ...edit, active: e.target.checked })} />
             Aktívna (ponúka sa pri pohyboch)
           </label>
-          <span className="px-2 py-1 rounded border-2 font-semibold text-sm justify-self-start" style={flavorStyle({ color_bg: edit.color_bg ?? null, color_text: edit.color_text ?? null, color_border: edit.color_border ?? null })}>
-            {edit.label || edit.name || 'Náhľad'}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="relative px-2 py-1 rounded border-2 font-semibold text-sm min-w-24 min-h-12 flex items-center" style={flavorStyle({ color_bg: edit.color_bg ?? null, color_text: edit.color_text ?? null, color_border: edit.color_border ?? null })}>
+              {edit.label || edit.name || 'Náhľad'}
+              <Photo kind="flavor-photos" path={edit.photo_path} alt="" className="ml-2 h-10 w-auto object-contain" />
+            </span>
+            {edit.id ? (
+              <PhotoUpload
+                kind="flavor-photos"
+                id={edit.id}
+                label={edit.photo_path ? 'Zmeniť logo' : 'Nahrať logo'}
+                onUploaded={async (path) => {
+                  const { error } = await supabase.from('flavors').update({ photo_path: path }).eq('id', edit.id!)
+                  if (error) throw new Error(error.message)
+                  setEdit({ ...edit, photo_path: path })
+                  onChanged()
+                }}
+              />
+            ) : <span className="text-xs muted">Logo môžeš nahrať po uložení príchute.</span>}
+          </div>
           {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
           <div className="flex gap-2">
             <button onClick={save} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>

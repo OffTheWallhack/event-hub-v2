@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { Photo, PhotoUpload } from '../components/Photo'
 import {
   type EqCategory, type EqStatus, type Equipment,
   CATEGORIES, CATEGORY_LABEL, EQ_COLUMNS, NEEDS_HOLDER, QUICK_STATUSES, STATUS_COLOR, STATUS_LABEL, eqIcon, splitName,
@@ -115,7 +116,7 @@ function ItemCard({ e, usage, isAdmin, open, onToggle, onSaved }: {
     <>
       <button onClick={isAdmin ? onToggle : undefined} className="w-full text-left flex gap-3 items-start">
         <span className="relative w-12 h-12 shrink-0 rounded-xl grid place-items-center text-2xl border-2" style={{ borderColor: STATUS_COLOR[e.status] }}>
-          {eqIcon(e)}
+          <Photo kind="equipment-photos" path={e.photo_path} alt={e.name} className="w-full h-full object-cover rounded-[10px]" fallback={eqIcon(e)} />
           <span className="absolute -bottom-1.5 -right-1.5 min-w-6 h-6 px-1 rounded-full grid place-items-center text-[11px] font-bold text-white" style={{ background: STATUS_COLOR[e.status] }}>
             {e.quantity}×
           </span>
@@ -212,6 +213,7 @@ function ItemForm({ item, onDone }: { item?: Equipment; onDone: (saved: boolean)
     active: item?.active ?? true,
   })
   const [error, setError] = useState<string | null>(null)
+  const [photo, setPhoto] = useState<string | null>(item?.photo_path ?? null)
 
   async function save() {
     if (!f.name.trim()) return setError('Zadaj názov.')
@@ -244,6 +246,21 @@ function ItemForm({ item, onDone }: { item?: Equipment; onDone: (saved: boolean)
       </div>
       <label className="grid gap-1 text-sm"><span className="muted">Poznámka (model, rozmer…)</span>
         <input className={input} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></label>
+      {item && (
+        <div className="flex items-center gap-3">
+          <Photo kind="equipment-photos" path={photo} alt="" className="w-16 h-16 rounded-lg object-cover border line" fallback={<span className="w-16 h-16 rounded-lg border line grid place-items-center text-3xl">{eqIcon(item)}</span>} />
+          <PhotoUpload
+            kind="equipment-photos"
+            id={item.id}
+            label={photo ? 'Zmeniť fotku' : 'Nahrať fotku'}
+            onUploaded={async (path) => {
+              const { error } = await supabase.from('equipment').update({ photo_path: path }).eq('id', item.id)
+              if (error) throw new Error(error.message)
+              setPhoto(path)
+            }}
+          />
+        </div>
+      )}
       {item && (
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
