@@ -7,6 +7,7 @@ import { EventGear } from '../components/EventGear'
 import { EventDrivers } from '../components/EventDrivers'
 import { BriefShare } from '../components/BriefShare'
 import { EventReport } from '../components/EventReport'
+import { EventNavBar } from '../components/EventNavBar'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
 import type { Flavor } from '../lib/cartons'
@@ -56,7 +57,10 @@ export function EventPage() {
       payouts: (po.data ?? []) as unknown as Payout[],
     })
   }
-  useEffect(() => { load() }, [id, isAdmin])
+  useEffect(() => {
+    setEditing(false); setAddCartons(null); setExpenseForm(null); setD(null)
+    load()
+  }, [id, isAdmin])
 
   async function openCartons() {
     const { data } = await supabase
@@ -68,7 +72,14 @@ export function EventPage() {
   }
 
   if (error) return <p className="text-[var(--color-signal)]">{error}</p>
-  if (!ev || !d) return <p className="muted">Načítavam…</p>
+  if (!ev || !d) {
+    return (
+      <section className="flex flex-col gap-4 min-w-0">
+        {ev && <EventNavBar ev={ev} />}
+        <p className="muted">Načítavam…</p>
+      </section>
+    )
+  }
 
   const expSum = d.expenses.reduce((s, e) => s + Number(e.amount), 0)
   const payWithTax = (p: Payout) => Number(p.amount) * (1 + Number(p.tax_rate))
@@ -86,6 +97,7 @@ export function EventPage() {
 
   return (
     <section className="flex flex-col gap-4 min-w-0">
+      <EventNavBar ev={ev} />
       <Link to="/" search={{ m: startDay(ev).slice(0, 7) }} className="text-sm muted">‹ Kalendár</Link>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -170,7 +182,7 @@ export function EventPage() {
       {editing ? (
         <EditForm ev={ev} onDone={(saved) => { setEditing(false); if (saved) load() }} />
       ) : (
-        <Card title="Logistika">
+        <Card title="Logistika" right={isAdmin && <button onClick={() => setEditing(true)} className="h-9 px-3 rounded-lg border line text-sm font-medium">Upraviť</button>}>
           <dl className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-2 text-sm">
             <Row label="Príchod">{ev.planned_arrival?.slice(0, 5)}</Row>
             <Row label="Lokalita">

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { ExpenseForm } from '../components/ExpenseForm'
+import { BottomBar } from '../components/BottomBar'
 import {
   type Expense, type MonthPayout, DOC_LABEL, EXPENSE_COLUMNS, monthRange, summarize, withTax,
 } from '../lib/finance'
@@ -57,13 +58,19 @@ export function Finance() {
 
   return (
     <section className="flex flex-col gap-4 min-w-0">
-      <div className="flex items-center gap-2">
-        <h1 className="display text-4xl font-bold capitalize flex-1">
-          {monthName(m)} <span className="muted font-medium">{month.slice(0, 4)}</span>
-        </h1>
-        <button onClick={() => setMonth(shift(month, -1))} className="h-10 w-10 rounded-lg border line text-lg" aria-label="Predošlý mesiac">‹</button>
-        <button onClick={() => setMonth(shift(month, 1))} className="h-10 w-10 rounded-lg border line text-lg" aria-label="Ďalší mesiac">›</button>
-      </div>
+      <h1 className="display text-4xl font-bold capitalize whitespace-nowrap">
+        {monthName(m)} <span className="muted font-medium">{month.slice(0, 4)}</span>
+      </h1>
+
+      <BottomBar>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setMonth(shift(month, -1))} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Predošlý mesiac">‹</button>
+          <button onClick={() => setMonth(todayLocal().slice(0, 7))} className="flex-1 h-11 rounded-lg border line font-semibold capitalize">
+            {monthName(m)} {month.slice(0, 4)}
+          </button>
+          <button onClick={() => setMonth(shift(month, 1))} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Ďalší mesiac">›</button>
+        </div>
+      </BottomBar>
 
       {drive && !drive.connected && (
         <p className="card p-3 text-sm">

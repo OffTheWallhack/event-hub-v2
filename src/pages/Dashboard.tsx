@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { SyncBox } from '../components/SyncBox'
 import { DayPanel } from '../components/DayPanel'
+import { BottomBar } from '../components/BottomBar'
 import { monthRange, summarize } from '../lib/finance'
 import { eur } from '../lib/events'
 import {
@@ -132,14 +133,19 @@ export function Dashboard() {
   return (
     <section>
       <DayPanel isAdmin={isAdmin} />
-      <div className="flex items-center gap-2">
-        <h1 className="display text-4xl font-bold capitalize flex-1">
-          {monthName(m)} <span className="muted font-medium">{y}</span>
-        </h1>
-        <button onClick={() => goMonth(prev)} className="h-10 w-10 rounded-lg border line text-lg" aria-label="Predošlý mesiac">‹</button>
-        <button onClick={() => navigate({ to: '/', search: {} })} className="h-10 px-3 rounded-lg border line text-sm">Dnes</button>
-        <button onClick={() => goMonth(next)} className="h-10 w-10 rounded-lg border line text-lg" aria-label="Ďalší mesiac">›</button>
-      </div>
+      <h1 className="display text-4xl font-bold capitalize whitespace-nowrap">
+        {monthName(m)} <span className="muted font-medium">{y}</span>
+      </h1>
+
+      <BottomBar>
+        <div className="flex items-center gap-2">
+          <button onClick={() => goMonth(prev)} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Predošlý mesiac">‹</button>
+          <button onClick={() => navigate({ to: '/', search: {} })} className="flex-1 h-11 rounded-lg border line font-semibold capitalize">
+            {monthName(m)} {y}
+          </button>
+          <button onClick={() => goMonth(next)} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Ďalší mesiac">›</button>
+        </div>
+      </BottomBar>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
         {TYPES.map((t) => (
