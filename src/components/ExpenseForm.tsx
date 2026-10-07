@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { type DocType, type Expense, DOC_LABEL, DOC_TYPES } from '../lib/finance'
+import { type DriveFile, shrinkImage, uploadReceipt } from '../lib/receipt'
+import { ReceiptViewer } from './ReceiptViewer'
+import { BusyOverlay } from './BusyOverlay'
 import { addDays, fmtRange, todayLocal } from '../lib/events'
 
 type EventOpt = { id: string; title: string; start_date: string; end_date: string | null }
@@ -25,6 +28,10 @@ export function ExpenseForm({ expense, fixedEventId, defaultDay, onDone }: {
   const [file, setFile] = useState<File | null>(null)
   const [events, setEvents] = useState<EventOpt[]>([])
   const [saving, setSaving] = useState<string | null>(null)
+  const [progress, setProgress] = useState<number | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  // už nahraný doklad: pri chybe ukladania do databázy sa nenahráva druhýkrát
+  const uploaded = useRef<{ key: string; drive: DriveFile } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   // eventy okolo dátumu dokladu, najnovšie hore
@@ -48,28 +55,46 @@ export function ExpenseForm({ expense, fixedEventId, defaultDay, onDone }: {
       })
   }, [day, fixedEventId])
 
+  useEffect(() => {
+    if (!file) { setPreview(null); return }
+    const u = URL.createObjectURL(file)
+    setPreview(u)
+    return () => URL.revokeObjectURL(u)
+  }, [file])
+
+  async function pick(f: File | null) {
+    setError(null)
+    uploaded.current = null
+    if (!f) return setFile(null)
+    setSaving('Pripravujem fotku…')
+    setFile(await shrinkImage(f))
+    setSaving(null)
+  }
+
   async function save() {
     setError(null)
     const sum = Number(amount.replace(',', '.'))
     if (!Number.isFinite(sum) || sum <= 0) return setError('Zadaj sumu.')
     let drive: { drive_file_url: string; drive_file_name: string } | null = null
     if (file) {
-      setSaving('Nahrávam doklad do Drive…')
-      const fd = new FormData()
-      fd.append('file', file)
-      fd.append('date', day)
-      fd.append('amount', String(sum))
-      fd.append('shop', desc)
-      const { data, error } = await supabase.functions.invoke('drive', { body: fd })
-      if (error || !data?.url) {
-        let detail = error?.message ?? 'Nahrávanie zlyhalo.'
-        try { detail = (await (error as { context?: Response }).context?.json())?.error ?? detail } catch { /* ignore */ }
-        setSaving(null)
-        return setError(detail)
+      const key = `${file.name}|${file.size}|${day}|${sum}|${desc}`
+      let up = uploaded.current?.key === key ? uploaded.current.drive : null
+      if (!up) {
+        setSaving('Nahrávam doklad do Drive')
+        setProgress(0)
+        try {
+          up = await uploadReceipt(file, { date: day, amount: sum, shop: desc }, setProgress)
+          uploaded.current = { key, drive: up }
+        } catch (e) {
+          setSaving(null)
+          setProgress(null)
+          return setError((e as Error).message)
+        }
       }
-      drive = { drive_file_url: data.url, drive_file_name: data.name }
+      drive = { drive_file_url: up.url, drive_file_name: up.name }
     }
-    setSaving('Ukladám…')
+    setProgress(null)
+    setSaving('Ukladám výdavok')
     const row = {
       date: day,
       doc_type: docType,
@@ -98,20 +123,18 @@ export function ExpenseForm({ expense, fixedEventId, defaultDay, onDone }: {
   const input = 'w-full h-11 px-3 rounded-lg border line bg-transparent'
   return (
     <div className="grid gap-4">
+      {saving && <BusyOverlay title={saving} progress={progress} />}
       <label className="grid gap-1 text-sm">
         <span className="muted">Doklad (fotka alebo PDF){expense?.drive_file_url ? ' – nahradí existujúci' : ''}</span>
         <input
           type="file"
           accept="image/*,application/pdf"
           className="text-sm file:mr-3 file:h-10 file:px-4 file:rounded-lg file:border-0 file:bg-[var(--color-ink)] file:text-white file:font-semibold"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => pick(e.target.files?.[0] ?? null)}
         />
-        {expense?.drive_file_url && !file && (
-          <a href={expense.drive_file_url} target="_blank" rel="noreferrer" className="text-[var(--color-sky)] text-sm">
-            {expense.drive_file_name ?? 'Otvoriť doklad'} ↗
-          </a>
-        )}
       </label>
+
+      <ReceiptViewer localUrl={preview} isPdf={file?.type === 'application/pdf'} driveUrl={file ? null : expense?.drive_file_url ?? null} />
 
       <div className="flex flex-wrap gap-1">
         {DOC_TYPES.map((t) => (
@@ -153,7 +176,7 @@ export function ExpenseForm({ expense, fixedEventId, defaultDay, onDone }: {
       {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
       <div className="flex gap-2">
         <button onClick={save} disabled={!!saving} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-60">
-          {saving ?? 'Uložiť'}
+          Uložiť
         </button>
         <button onClick={() => onDone(false)} className="h-11 px-4 rounded-lg border line">Zrušiť</button>
         {expense && <button onClick={remove} className="h-11 px-3 ml-auto text-sm text-[var(--color-signal)]">Zmazať</button>}

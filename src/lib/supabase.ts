@@ -8,6 +8,9 @@ if (!url || !key) {
   throw new Error('Chýba VITE_SUPABASE_URL alebo VITE_SUPABASE_PUBLISHABLE_KEY v .env')
 }
 
+export const SUPABASE_URL = url
+export const SUPABASE_KEY = key
+
 export const supabase = createClient(url, key, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
 })

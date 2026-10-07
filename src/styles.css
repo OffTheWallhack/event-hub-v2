@@ -45,3 +45,8 @@ body {
 .muted { color: var(--muted); }
 .line { border-color: var(--line); }
 h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: 0.01em; }
+
+@keyframes busy-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
