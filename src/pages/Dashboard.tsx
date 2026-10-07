@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { SyncBox } from '../components/SyncBox'
+import { DayPanel } from '../components/DayPanel'
 import { monthRange, summarize } from '../lib/finance'
 import { eur } from '../lib/events'
 import {
@@ -130,6 +131,7 @@ export function Dashboard() {
 
   return (
     <section>
+      <DayPanel isAdmin={isAdmin} />
       <div className="flex items-center gap-2">
         <h1 className="display text-4xl font-bold capitalize flex-1">
           {monthName(m)} <span className="muted font-medium">{y}</span>

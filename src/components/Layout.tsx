@@ -40,7 +40,7 @@ export function Layout() {
                     to={n.to}
                     activeOptions={{ exact: n.to === '/' }}
                     className="block px-3 py-1.5 rounded-lg text-sm font-medium muted hover:opacity-100"
-                    activeProps={{ className: 'block px-3 py-1.5 rounded-lg text-sm font-semibold bg-[var(--color-signal)] text-white' }}
+                    activeProps={{ className: 'block px-3 py-1.5 rounded-lg text-sm font-semibold bg-[var(--color-signal)] text-white!' }}
                   >
                     {n.label}
                   </Link>

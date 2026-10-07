@@ -6,6 +6,7 @@ import { MovementForm } from '../components/MovementForm'
 import { EventGear } from '../components/EventGear'
 import { EventDrivers } from '../components/EventDrivers'
 import { BriefShare } from '../components/BriefShare'
+import { EventReport } from '../components/EventReport'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
 import type { Flavor } from '../lib/cartons'
@@ -217,7 +218,9 @@ export function EventPage() {
 
       {isAdmin && <BriefShare ev={ev} />}
 
-      {(ev.rating || ev.report) && (
+      {isAdmin && <EventReport key={ev.id + ev.status} ev={ev} cartons={cartons.map((c) => ({ label: c.label, n: c.n }))} onChanged={load} />}
+
+      {!isAdmin && (ev.rating || ev.report) && (
         <Card title="Report">
           {ev.rating && <p className="text-lg">{'★'.repeat(ev.rating)}<span className="muted">{'★'.repeat(5 - ev.rating)}</span></p>}
           {ev.report && <p className="text-sm whitespace-pre-wrap mt-1">{ev.report}</p>}

@@ -26,6 +26,7 @@ export type EventRow = {
   report: string | null
   rating: number | null
   no_expenses: boolean
+  played_as_dj: boolean
 }
 
 export const TYPE_LABEL: Record<EventType, string> = {
