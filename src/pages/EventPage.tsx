@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { MovementForm } from '../components/MovementForm'
 import { EventGear } from '../components/EventGear'
 import { EventDrivers } from '../components/EventDrivers'
+import { BriefShare } from '../components/BriefShare'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
 import type { Flavor } from '../lib/cartons'
@@ -213,6 +214,8 @@ export function EventPage() {
         )}
       </Card>
 
+
+      {isAdmin && <BriefShare ev={ev} />}
 
       {(ev.rating || ev.report) && (
         <Card title="Report">

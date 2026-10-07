@@ -7,6 +7,7 @@ import { applyTheme, getTheme } from './lib/theme'
 import { router } from './router'
 import { Login } from './pages/Login'
 import { Pending } from './pages/Pending'
+import { BriefPage } from './pages/BriefPage'
 
 applyTheme(getTheme())
 
@@ -18,10 +19,17 @@ function App() {
   return <RouterProvider router={router} context={{ isAdmin }} />
 }
 
+// Verejný odkaz pre vodiča (/brief/<token>) sa zobrazí bez prihlásenia.
+const brief = /^\/brief\/([A-Za-z0-9_-]+)\/?$/.exec(window.location.pathname)
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    {brief ? (
+      <BriefPage token={brief[1]} />
+    ) : (
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    )}
   </StrictMode>,
 )
