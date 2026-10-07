@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { BusyOverlay } from '../components/BusyOverlay'
-import { exportEventCar, exportFinance } from '../lib/exports'
+import { exportDrivers, exportEventCar, exportFinance, exportProduct, exportTechnika } from '../lib/exports'
 import { eur, todayLocal } from '../lib/events'
 
 type Result = { ok: boolean; text: string }
@@ -47,7 +47,7 @@ export function ExportPage() {
       <div className="card p-4 grid gap-3">
         <div>
           <h2 className="display text-xl font-bold">Event Car</h2>
-          <p className="text-sm muted">Súbor s hárkami EVENT CAR, SUPPORT a ADHOC. Bez financií, zrušené eventy sa nerátajú.</p>
+          <p className="text-sm muted">Hárky EVENT CAR, SUPPORT, ADHOC a TECHNIKA (po eventoch, súhrn po kusoch a po type). Bez financií, zrušené eventy sa nerátajú.</p>
           <button
             disabled={bad || !!busy}
             onClick={() => run('Event Car', async () => {
@@ -59,6 +59,41 @@ export function ExportPage() {
             Stiahnuť Event Car (.xlsx)
           </button>
         </div>
+
+        <Block
+          title="TECHNIKA"
+          text="Samostatný súbor: kde bola ktorá technika, koľko kusov a dní, súhrn po kusoch a po type za mesiace."
+          label="Stiahnuť TECHNIKA (.xlsx)"
+          disabled={bad || !!busy}
+          onClick={() => run('TECHNIKA', async () => {
+            const r = await exportTechnika(from, to)
+            return `Hotovo: ${r.events} eventov s technikou, ${r.pieces} kusov. Súbor sa stiahol.`
+          })}
+        />
+
+        <Block
+          title="PRODUCT"
+          text="Kartóny: stav skladu, všetky pohyby, spotreba po príchutiach a podľa oddelenia."
+          label="Stiahnuť PRODUCT (.xlsx)"
+          disabled={bad || !!busy}
+          onClick={() => run('PRODUCT', async () => {
+            const r = await exportProduct(from, to)
+            return `Hotovo: ${r.movements} pohybov. Súbor sa stiahol.`
+          })}
+        />
+
+        {isAdmin && (
+          <Block
+            title="DRIVERS"
+            text="Koľko peňazí ide ktorému vodičovi za mesiac (základ, 15 % daň, vyplatené / nevyplatené)."
+            label="Stiahnuť DRIVERS (.xlsx)"
+            disabled={bad || !!busy}
+            onClick={() => run('DRIVERS', async () => {
+              const r = await exportDrivers(from, to)
+              return `Hotovo: ${r.payouts} výplat, spolu ${eur(r.total)}. Súbor sa stiahol.`
+            })}
+          />
+        )}
 
         {isAdmin && (
           <div className="border-t line pt-3">
@@ -81,7 +116,22 @@ export function ExportPage() {
       {result && (
         <p className={'card p-3 text-sm ' + (result.ok ? '' : 'text-[var(--color-signal)]')}>{result.text}</p>
       )}
-      <p className="text-xs muted">Ďalšie exporty (TECHNIKA, DRIVERS, PRODUCT) pribudnú v ďalšej časti.</p>
     </section>
+  )
+}
+
+function Block({ title, text, label, disabled, onClick }: { title: string; text: string; label: string; disabled: boolean; onClick: () => void }) {
+  return (
+    <div className="border-t line pt-3">
+      <h2 className="display text-xl font-bold">{title}</h2>
+      <p className="text-sm muted">{text}</p>
+      <button
+        disabled={disabled}
+        onClick={onClick}
+        className="mt-2 h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-ink)] dark:bg-[var(--color-signal)] disabled:opacity-50"
+      >
+        {label}
+      </button>
+    </div>
   )
 }
