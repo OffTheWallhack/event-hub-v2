@@ -3,10 +3,10 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
 import type { VehicleOpt } from '../lib/todos'
-import { eur, fmtDay, todayLocal } from '../lib/events'
+import { fmtDay, todayLocal } from '../lib/events'
 
 type Vehicle = VehicleOpt & { full_name: string | null; equipment_notes: string | null; is_generic: boolean }
-type Service = { id: string; date: string | null; description: string; cost: number | null }
+type Service = { id: string; date: string | null; description: string }
 
 const GARAGE = 'garage'
 
@@ -99,22 +99,19 @@ function Services({ vehicleId, isAdmin }: { vehicleId: string; isAdmin: boolean 
   const [rows, setRows] = useState<Service[]>([])
   const [date, setDate] = useState(todayLocal())
   const [desc, setDesc] = useState('')
-  const [cost, setCost] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [reload, setReload] = useState(0)
 
   useEffect(() => {
-    supabase.from('vehicle_services').select('id, date, description, cost').eq('vehicle_id', vehicleId).order('date', { ascending: false, nullsFirst: false })
+    supabase.from('vehicle_services').select('id, date, description').eq('vehicle_id', vehicleId).order('date', { ascending: false, nullsFirst: false })
       .then(({ data }) => setRows((data ?? []) as Service[]))
   }, [vehicleId, reload])
 
   async function add() {
     if (!desc.trim()) return
-    const c = cost.trim() === '' ? null : Number(cost.replace(',', '.'))
-    if (c !== null && !Number.isFinite(c)) return setError('Neplatná suma.')
-    const { error } = await supabase.from('vehicle_services').insert({ vehicle_id: vehicleId, date: date || null, description: desc.trim(), cost: c })
+    const { error } = await supabase.from('vehicle_services').insert({ vehicle_id: vehicleId, date: date || null, description: desc.trim() })
     if (error) return setError(error.message)
-    setDesc(''); setCost(''); setError(null)
+    setDesc(''); setError(null)
     setReload((r) => r + 1)
   }
 
@@ -124,20 +121,15 @@ function Services({ vehicleId, isAdmin }: { vehicleId: string; isAdmin: boolean 
     setReload((r) => r + 1)
   }
 
-  const total = rows.reduce((t, r) => t + Number(r.cost ?? 0), 0)
   const input = 'h-10 px-3 rounded-lg border line bg-transparent text-sm'
   return (
     <div className="card p-4 min-w-0">
-      <div className="flex items-baseline justify-between mb-2">
-        <h2 className="display text-xl font-bold">Servisy a opravy</h2>
-        {rows.length > 0 && <span className="text-sm muted">spolu {eur(total)}</span>}
-      </div>
+      <h2 className="display text-xl font-bold mb-2">Servisy a opravy</h2>
       {isAdmin && (
         <div className="grid gap-2 mb-3 min-w-0">
           <input className={input + ' w-full min-w-0'} placeholder="Čo sa robilo…" value={desc} onChange={(e) => setDesc(e.target.value)} />
-          <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_auto] gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input type="date" className={input + ' min-w-0'} value={date} onChange={(e) => setDate(e.target.value)} />
-            <input type="text" inputMode="decimal" className={input + ' min-w-0'} placeholder="€" value={cost} onChange={(e) => setCost(e.target.value)} />
             <button onClick={add} disabled={!desc.trim()} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-50">Pridať</button>
           </div>
           {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
@@ -151,7 +143,6 @@ function Services({ vehicleId, isAdmin }: { vehicleId: string; isAdmin: boolean 
             <li key={s.id} className="py-2 flex gap-2 items-baseline">
               <span className="muted w-20 shrink-0 text-xs">{s.date ? fmtDay(s.date) : '–'}</span>
               <span className="flex-1 min-w-0 break-words">{s.description}</span>
-              {s.cost != null && <span className="tabular-nums font-semibold">{eur(Number(s.cost))}</span>}
               {isAdmin && <button onClick={() => remove(s)} className="muted px-1" aria-label="Zmazať">×</button>}
             </li>
           ))}
