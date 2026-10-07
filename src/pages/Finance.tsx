@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { BottomBar } from '../components/BottomBar'
 import {
-  type Expense, type MonthPayout, DOC_LABEL, EXPENSE_COLUMNS, monthRange, summarize, withTax,
+  type Expense, type MonthPayout, DOC_COLOR, DOC_LABEL, EXPENSE_COLUMNS, monthRange, summarize, withTax,
 } from '../lib/finance'
 import { eur, fmtDay, monthName, todayLocal } from '../lib/events'
 
@@ -80,9 +80,9 @@ export function Finance() {
       {error && <p className="text-[var(--color-signal)]">{error}</p>}
 
       <div className="grid grid-cols-3 gap-2">
-        <Stat label="Vedľajšie náklady" value={eur(sum.exp)} sub={`${expenses.length} dokladov`} />
-        <Stat label="Brigádnici + 15 %" value={eur(sum.pay)} sub={`základ ${eur(sum.payBase)}`} />
-        <Stat label="Pošle Red Bull" value={eur(sum.total)} strong />
+        <Stat label="Vedľajšie náklady" value={eur(sum.exp)} sub={`${expenses.length} dokladov`} color="var(--color-sky)" />
+        <Stat label="Brigádnici + 15 %" value={eur(sum.pay)} sub={`základ ${eur(sum.payBase)}`} color="#7c3aed" />
+        <Stat label="Pošle Red Bull" value={eur(sum.total)} strong color="#2e8b57" />
       </div>
 
       <Card
@@ -99,7 +99,10 @@ export function Finance() {
               <li key={e.id} className="py-2 flex gap-2 items-start">
                 <span className="muted w-12 shrink-0">{fmtDay(e.date).replace(/ \d{4}$/, '')}</span>
                 <button onClick={() => setForm(e)} className="flex-1 min-w-0 text-left">
-                  <span className="block truncate">{(e.doc_type && DOC_LABEL[e.doc_type]) ?? 'Doklad'}{e.description ? ` · ${e.description}` : ''}</span>
+                  <span className="block truncate">
+                    {e.doc_type && <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle" style={{ background: DOC_COLOR[e.doc_type] }} />}
+                    <b style={{ color: e.doc_type ? DOC_COLOR[e.doc_type] : undefined }}>{(e.doc_type && DOC_LABEL[e.doc_type]) ?? 'Doklad'}</b>{e.description ? ` · ${e.description}` : ''}
+                  </span>
                   <span className="block truncate text-xs muted">
                     {e.events?.title ?? 'bez eventu'}{e.paid_by ? ` · ${e.paid_by}` : ''}{e.control ? ` · ${e.control}` : ''}
                   </span>
@@ -149,11 +152,14 @@ export function Finance() {
   )
 }
 
-function Stat({ label, value, sub, strong }: { label: string; value: string; sub?: string; strong?: boolean }) {
+function Stat({ label, value, sub, strong, color }: { label: string; value: string; sub?: string; strong?: boolean; color: string }) {
   return (
-    <div className={'card p-3 ' + (strong ? 'border-[var(--color-signal)] border-2' : '')}>
+    <div
+      className="card p-3"
+      style={{ borderTop: `4px solid ${color}`, ...(strong ? { background: `color-mix(in srgb, ${color} 12%, var(--card))` } : {}) }}
+    >
       <p className="text-[11px] muted leading-tight">{label}</p>
-      <p className="display text-xl sm:text-2xl font-bold leading-tight mt-1">{value}</p>
+      <p className="display text-xl sm:text-2xl font-bold leading-tight mt-1" style={{ color }}>{value}</p>
       {sub && <p className="text-[11px] muted">{sub}</p>}
     </div>
   )

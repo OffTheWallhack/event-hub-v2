@@ -54,7 +54,41 @@ function fitColumns(ws: Sheet, min = 8, max = 60) {
   })
 }
 
+// Náhľad: namiesto stiahnutia sa hotový zošit zachytí a ukáže sa na obrazovke.
+let sink: ((wb: import('exceljs').Workbook) => void) | null = null
+
+export type SheetPreview = { name: string; rows: string[][]; total: number }
+
+/** Spustí export (napr. () => exportFinance(from, to)) bez sťahovania a vráti hárky s prvými riadkami. */
+export async function previewExport(run: () => Promise<unknown>, maxRows = 8): Promise<SheetPreview[]> {
+  let captured: import('exceljs').Workbook | null = null
+  sink = (wb) => { captured = wb }
+  try { await run() } finally { sink = null }
+  if (!captured) return []
+  const show = (v: unknown): string => {
+    if (v == null) return ''
+    if (v instanceof Date) return `${v.getUTCDate()}.${v.getUTCMonth() + 1}.${v.getUTCFullYear()}`
+    if (typeof v === 'number') return Number.isInteger(v) ? String(v) : v.toFixed(2)
+    if (typeof v === 'object') {
+      const o = v as { text?: string; result?: unknown }
+      return o.text ?? (o.result != null ? show(o.result) : '')
+    }
+    return String(v)
+  }
+  return (captured as import('exceljs').Workbook).worksheets.map((ws) => {
+    const rows: string[][] = []
+    ws.eachRow((row, n) => {
+      if (n > maxRows) return
+      const cells: string[] = []
+      for (let c = 1; c <= ws.columnCount; c++) cells.push(show(row.getCell(c).value))
+      rows.push(cells)
+    })
+    return { name: ws.name, rows, total: ws.rowCount }
+  })
+}
+
 async function download(wb: import('exceljs').Workbook, filename: string) {
+  if (sink) { sink(wb); return }
   const buf = await wb.xlsx.writeBuffer()
   const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
   const url = URL.createObjectURL(blob)

@@ -63,3 +63,13 @@ export function summarize(expenses: Pick<Expense, 'amount'>[], payouts: Pick<Pay
   const pay = payouts.reduce((s, p) => s + withTax(p), 0)
   return { exp, payBase, pay, total: Math.round((exp + pay) * 100) / 100 }
 }
+
+export const DOC_COLOR: Record<DocType, string> = {
+  blok: '#2f6fdd',
+  ucet: '#7c3aed',
+  faktura: '#d7263d',
+  taxi: '#f29e1f',
+  brigadnik: '#2e8b57',
+  screenshot: '#0d9488',
+  ziadny: '#8f99aa',
+}
