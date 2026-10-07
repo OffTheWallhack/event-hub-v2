@@ -6,26 +6,36 @@ import {
 } from '../lib/exports'
 import { eur, todayLocal } from '../lib/events'
 
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Máj', 'Jún', 'Júl', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+const label = (m: string) => `${MONTH_SHORT[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`
+
 type Result = { ok: boolean; text: string }
 type Kind = 'eventcar' | 'technika' | 'product' | 'drivers' | 'finance'
 
 export function ExportPage() {
   const { isAdmin } = useAuth()
   const cur = todayLocal().slice(0, 7)
-  const [from, setFrom] = useState(cur)
-  const [to, setTo] = useState(cur)
+  const thisYear = Number(cur.slice(0, 4))
+  const years = Array.from({ length: thisYear - 2024 + 1 }, (_, i) => thisYear - i)
+  const [year, setYear] = useState(thisYear)
+  const [picked, setPicked] = useState<string[]>([cur])
+  const months = [...picked].sort()
   const [busy, setBusy] = useState<string | null>(null)
   const [result, setResult] = useState<Result | null>(null)
   const [preview, setPreview] = useState<{ kind: Kind; sheets: SheetPreview[] } | null>(null)
 
-  const bad = !from || !to || from > to
+  const bad = months.length === 0
+  const toggle = (m: string) => { setPicked((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m])); setPreview(null) }
+  const set = (list: string[]) => { setPicked(list); setPreview(null) }
+  const ym = (y: number, m: number) => `${y}-${String(m).padStart(2, '0')}`
+  const lastThree = Array.from({ length: 3 }, (_, i) => { const d = new Date(Number(cur.slice(0, 4)), Number(cur.slice(5, 7)) - 1 - i, 1); return ym(d.getFullYear(), d.getMonth() + 1) })
 
   const RUN: Record<Kind, () => Promise<string>> = {
-    eventcar: async () => `Hotovo: ${(await exportEventCar(from, to)).events} eventov. Súbor sa stiahol.`,
-    technika: async () => { const r = await exportTechnika(from, to); return `Hotovo: ${r.events} eventov s technikou, ${r.pieces} kusov. Súbor sa stiahol.` },
-    product: async () => `Hotovo: ${(await exportProduct(from, to)).movements} pohybov. Súbor sa stiahol.`,
-    drivers: async () => { const r = await exportDrivers(from, to); return `Hotovo: ${r.payouts} výplat, spolu ${eur(r.total)}. Súbor sa stiahol.` },
-    finance: async () => { const r = await exportFinance(from, to); return `Hotovo: ${r.docs} riadkov, spolu ${eur(r.total)}. Súbor sa stiahol.` },
+    eventcar: async () => `Hotovo: ${(await exportEventCar(months)).events} eventov. Súbor sa stiahol.`,
+    technika: async () => { const r = await exportTechnika(months); return `Hotovo: ${r.events} eventov s technikou, ${r.pieces} kusov. Súbor sa stiahol.` },
+    product: async () => `Hotovo: ${(await exportProduct(months)).movements} pohybov. Súbor sa stiahol.`,
+    drivers: async () => { const r = await exportDrivers(months); return `Hotovo: ${r.payouts} výplat, spolu ${eur(r.total)}. Súbor sa stiahol.` },
+    finance: async () => { const r = await exportFinance(months); return `Hotovo: ${r.docs} riadkov, spolu ${eur(r.total)}. Súbor sa stiahol.` },
   }
 
   async function run(kind: Kind, label: string, mode: 'download' | 'preview') {
@@ -56,13 +66,41 @@ export function ExportPage() {
 
       <div className="card p-4">
         <h2 className="display text-xl font-bold mb-2">Obdobie</h2>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="grid gap-1 text-sm"><span className="muted">Od mesiaca</span>
-            <input type="month" className={input} value={from} onChange={(e) => { setFrom(e.target.value); setPreview(null) }} /></label>
-          <label className="grid gap-1 text-sm"><span className="muted">Do mesiaca</span>
-            <input type="month" className={input} value={to} onChange={(e) => { setTo(e.target.value); setPreview(null) }} /></label>
+        <div className="flex gap-1 mb-2">
+          {years.map((y) => {
+            const n = months.filter((m) => m.startsWith(String(y))).length
+            return (
+              <button key={y} onClick={() => setYear(y)} className={'h-10 px-4 rounded-lg border line font-semibold ' + (year === y ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)]' : '')}>
+                {y}{n > 0 && <span className="ml-1 text-xs opacity-80">·{n}</span>}
+              </button>
+            )
+          })}
         </div>
-        {bad && <p className="text-sm text-[var(--color-signal)] mt-2">Vyber obdobie, „od“ nesmie byť po „do“.</p>}
+        <div className="grid grid-cols-4 gap-1.5">
+          {MONTH_SHORT.map((label, i) => {
+            const m = ym(year, i + 1)
+            const on = picked.includes(m)
+            return (
+              <button
+                key={m}
+                onClick={() => toggle(m)}
+                aria-pressed={on}
+                className={'h-11 rounded-lg border font-semibold ' + (on ? 'bg-[var(--color-signal)] border-[var(--color-signal)] text-white' : 'line')}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+        <div className="flex flex-wrap gap-1 mt-2">
+          <button onClick={() => set([cur])} className="h-9 px-3 rounded-lg border line text-xs font-medium">Tento mesiac</button>
+          <button onClick={() => set(lastThree)} className="h-9 px-3 rounded-lg border line text-xs font-medium">Posledné 3</button>
+          <button onClick={() => set(Array.from({ length: 12 }, (_, i) => ym(year, i + 1)))} className="h-9 px-3 rounded-lg border line text-xs font-medium">Celý {year}</button>
+          <button onClick={() => set([])} className="h-9 px-3 rounded-lg border line text-xs font-medium muted">Vymazať výber</button>
+        </div>
+        <p className={'text-sm mt-2 ' + (bad ? 'text-[var(--color-signal)]' : 'muted')}>
+          {bad ? 'Vyber aspoň jeden mesiac.' : `Vybrané: ${months.length} ${months.length === 1 ? 'mesiac' : months.length < 5 ? 'mesiace' : 'mesiacov'} (${months.length > 6 ? `${label(months[0])} … ${label(months[months.length - 1])}` : months.map(label).join(', ')})`}
+        </p>
       </div>
 
       {blocks.filter((b) => !b.admin || isAdmin).map((b) => (

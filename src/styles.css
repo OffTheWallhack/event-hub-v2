@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant dark (&:where([data-dark="true"], [data-dark="true"] *));
 
 @theme {
   --font-sans: "Barlow", system-ui, sans-serif;
@@ -23,15 +23,8 @@
   --line: var(--color-line);
   --muted: var(--color-muted);
 }
-[data-theme="dark"] {
-  --bg: #0b1320;
-  --fg: #ece7dc;
-  --card: #121d2e;
-  --line: #24324a;
-  --muted: #8f99aa;
-}
-
 html, body, #root { height: 100%; }
+#root { position: relative; z-index: 1; }
 body {
   margin: 0;
   background: var(--bg);
@@ -60,3 +53,19 @@ h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: 0.01em;
 
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Animovaná aura na pozadí (len niektoré témy; dá sa vypnúť v tému) */
+#aura { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; display: none; }
+[data-aura="on"] #aura { display: block; }
+#aura::before, #aura::after, #aura i {
+  content: ''; position: absolute; width: 85vmax; height: 85vmax; border-radius: 50%;
+  filter: blur(70px); opacity: var(--aura-op, 0.5); will-change: transform;
+}
+#aura::before { background: radial-gradient(circle, var(--aura1), transparent 62%); left: -35vmax; top: -35vmax; animation: aura-a 19s ease-in-out infinite alternate; }
+#aura::after { background: radial-gradient(circle, var(--aura2), transparent 62%); right: -40vmax; bottom: -40vmax; animation: aura-b 23s ease-in-out infinite alternate; }
+#aura i { background: radial-gradient(circle, var(--aura3), transparent 62%); left: 5vmax; top: 25vh; animation: aura-c 29s ease-in-out infinite alternate; }
+@keyframes aura-a { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(35vmax, 25vmax) scale(1.25); } }
+@keyframes aura-b { 0% { transform: translate(0, 0) scale(1.1); } 100% { transform: translate(-30vmax, -35vmax) scale(0.9); } }
+@keyframes aura-c { 0% { transform: translate(0, 0) scale(0.9); } 100% { transform: translate(40vmax, -20vmax) scale(1.2); } }
+@media (prefers-reduced-motion: reduce) { #aura::before, #aura::after, #aura i { animation: none; } }
+.glass { background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }

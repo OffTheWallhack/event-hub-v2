@@ -6,8 +6,8 @@ export function BottomSlot() {
   return (
     <div
       id="bottom-slot"
-      className="fixed left-0 right-0 bottom-0 z-30 border-t line empty:hidden"
-      style={{ background: 'var(--bg)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed left-0 right-0 bottom-0 z-30 border-t line glass empty:hidden"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
     />
   )
 }

@@ -4,6 +4,19 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.1.0',
+    date: '7. 10. 2026',
+    title: 'Témy, Technika ako v starej appke, výber mesiacov',
+    items: [
+      '14 farebných tém (biela, piesková, jantárová, čierna, ohnivá, neón…) a animované pozadie „aura“ – tlačidlo 🎨 hore',
+      'Technika: veľká fotka vpravo, počty voľné / požičané / pokazené, žltý box „Požičané: komu“, záložky Audio / DJ / Cooler / Rekvizity / Iné',
+      'Väčšie menu, kompaktnejšia mesačná štatistika',
+      'Mini kalendár na evente: zvislé čiarky (1 čiarka = 1 event), servis má inú farbu',
+      'Garáž len Zubor, Sugga a Garáž; fotky áut len tie, ktoré nahráš sám',
+      'Export: mesiace sa vyklikávajú, záložky rokov 2024 / 2025 / 2026, viac mesiacov naraz',
+    ],
+  },
+  {
     version: '1.0.0',
     date: '7. 10. 2026',
     title: 'Dokončenie: obrázky, Info, nové rozloženie',

@@ -28,3 +28,6 @@ export function toLocalInput(iso: string | null): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`
 }
 export const fromLocalInput = (v: string): string | null => (v ? new Date(v).toISOString() : null)
+
+// Autá, ktoré majú vlastné úlohy a stránku v Garáži (ostatné autá sa pri eventoch používajú, ale úlohy nemajú).
+export const GARAGE_VEHICLES = ['Zubor', 'Sugga']

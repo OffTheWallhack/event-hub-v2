@@ -220,8 +220,8 @@ export function Dashboard() {
         })}
       </div>
 
-      <h2 className="display text-2xl font-bold mt-6">Štatistiky mesiaca</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+      <h2 className="display text-xl font-bold mt-4">Štatistiky mesiaca</h2>
+      <div className="grid grid-cols-4 gap-1.5 mt-2">
         <Stat label="Eventy spolu" value={cur.count} prev={last.count} />
         <Stat label="Obsadené dni" value={cur.busy} prev={last.busy} />
         <Stat label="Voľné dni" value={cur.free} prev={last.free} />
@@ -229,7 +229,7 @@ export function Dashboard() {
           <Stat key={t} label={TYPE_LABEL[t]} value={cur.byType[t]} prev={last.byType[t]} color={TYPE_COLOR[t]} />
         ))}
       </div>
-      <p className="text-xs muted mt-1">Porovnanie s mesiacom {monthName(prev.m)}. Zrušené eventy sa nerátajú.</p>
+      <p className="text-xs muted mt-1">Číslo vedľa = rozdiel oproti mesiacu {monthName(prev.m)}. Zrušené eventy sa nerátajú.</p>
 
       {isAdmin && <FinanceSummary month={monthKey(y, m)} />}
 
@@ -241,14 +241,11 @@ export function Dashboard() {
 function Stat({ label, value, prev, color }: { label: string; value: number; prev: number; color?: string }) {
   const diff = value - prev
   return (
-    <div className="card p-3">
-      <p className="text-xs muted flex items-center gap-1">
-        {color && <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: color }} />}
-        {label}
-      </p>
-      <p className="display text-3xl font-bold leading-tight">{value}</p>
-      <p className="text-xs muted">
-        {diff === 0 ? 'rovnako' : diff > 0 ? `+${diff}` : diff} <span className="opacity-70">(min. {prev})</span>
+    <div className="card px-2 py-1.5 min-w-0" style={color ? { borderTop: `3px solid ${color}` } : undefined}>
+      <p className="text-[10px] muted leading-tight truncate">{label}</p>
+      <p className="flex items-baseline gap-1">
+        <span className="display text-2xl font-bold leading-tight">{value}</span>
+        <span className="text-[10px] muted">{diff === 0 ? '=' : diff > 0 ? `+${diff}` : diff}</span>
       </p>
     </div>
   )

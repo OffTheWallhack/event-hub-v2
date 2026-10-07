@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import { Photo, PhotoUpload } from '../components/Photo'
 import {
   type EqCategory, type EqStatus, type Equipment,
-  CATEGORIES, CATEGORY_LABEL, EQ_COLUMNS, NEEDS_HOLDER, QUICK_STATUSES, STATUS_COLOR, STATUS_LABEL, eqIcon, splitName,
+  CATEGORIES, CATEGORY_LABEL, EQ_COLUMNS, EQ_GROUPS, NEEDS_HOLDER, QUICK_STATUSES, STATUS_COLOR, STATUS_LABEL, eqCounts, eqGroup, eqIcon, splitName, type EqGroup,
 } from '../lib/equipment'
 import { durationDays, fmtRange } from '../lib/events'
 
@@ -22,7 +22,7 @@ export function EquipmentPage() {
   const { isAdmin } = useAuth()
   const [items, setItems] = useState<Equipment[]>([])
   const [usage, setUsage] = useState<Map<string, Usage>>(new Map())
-  const [cat, setCat] = useState<EqCategory | 'all'>('all')
+  const [cat, setCat] = useState<EqGroup | 'all'>('all')
   const [onlyIssues, setOnlyIssues] = useState(false)
   const [open, setOpen] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -55,7 +55,7 @@ export function EquipmentPage() {
 
   const hasIssue = (e: Equipment) => e.status !== 'ok' || e.qty_broken > 0 || e.qty_borrowed > 0
   const shown = useMemo(
-    () => items.filter((e) => (isAdmin || e.active) && (cat === 'all' || e.category === cat) && (!onlyIssues || hasIssue(e))),
+    () => items.filter((e) => (isAdmin || e.active) && (cat === 'all' || eqGroup(e) === cat) && (!onlyIssues || hasIssue(e))),
     [items, cat, onlyIssues, isAdmin],
   )
   const issues = items.filter((e) => e.active && hasIssue(e)).length
@@ -78,18 +78,18 @@ export function EquipmentPage() {
       )}
 
       <div className="flex flex-wrap gap-1">
-        {(['all', ...CATEGORIES] as const).map((c) => (
+        {(['all', ...EQ_GROUPS] as const).map((c) => (
           <button
             key={c}
             onClick={() => setCat(c)}
             className={'h-9 px-3 rounded-lg border line text-sm ' + (cat === c ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
           >
-            {c === 'all' ? 'Všetko' : CATEGORY_LABEL[c]}
+            {c === 'all' ? 'Všetko' : c}
           </button>
         ))}
         <label className="flex items-center gap-1 ml-auto text-sm muted">
           <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} />
-          Len mimo OK ({issues})
+          Mimo skladu / pokazené ({issues})
         </label>
       </div>
 
@@ -111,32 +111,47 @@ function ItemCard({ e, usage, isAdmin, open, onToggle, onSaved }: {
   e: Equipment; usage?: Usage; isAdmin: boolean; open: boolean; onToggle: () => void; onSaved: () => void
 }) {
   const [editAll, setEditAll] = useState(false)
-  const [name, cat] = splitName(e.name)
+  const [name] = splitName(e.name)
+  const c = eqCounts(e)
+  const lent = e.held_by && (NEEDS_HOLDER.includes(e.status) || e.qty_borrowed > 0)
+  const cat = splitName(e.name)[1] ?? CATEGORY_LABEL[e.category]
   return (
     <>
-      <button onClick={isAdmin ? onToggle : undefined} className="w-full text-left flex gap-3 items-start">
-        <span className="relative w-12 h-12 shrink-0 rounded-xl grid place-items-center text-2xl border-2" style={{ borderColor: STATUS_COLOR[e.status] }}>
-          <Photo kind="equipment-photos" path={e.photo_path} alt={e.name} className="w-full h-full object-cover rounded-[10px]" fallback={eqIcon(e)} />
-          <span className="absolute -bottom-1.5 -right-1.5 min-w-6 h-6 px-1 rounded-full grid place-items-center text-[11px] font-bold text-white" style={{ background: STATUS_COLOR[e.status] }}>
-            {e.quantity}×
+      <div className="relative overflow-hidden rounded-xl">
+        <Photo
+          kind="equipment-photos"
+          path={e.photo_path}
+          alt={e.name}
+          className="absolute right-0 top-0 h-full w-[48%] object-contain object-right pointer-events-none"
+          fallback={null}
+        />
+        <button onClick={isAdmin ? onToggle : undefined} className="relative w-full text-left grid gap-1.5 min-h-[88px]">
+          <span className="block pr-[46%]">
+            <span className="block font-semibold text-lg leading-tight">{name}</span>
+            <span className="block text-[11px] uppercase tracking-wider muted">{cat}</span>
           </span>
-        </span>
-        <span className="flex-1 min-w-0">
-          <span className="block font-semibold leading-tight">{name}</span>
-          <span className="block text-xs muted">{cat ?? CATEGORY_LABEL[e.category]}{e.notes ? ` · ${e.notes}` : ''}</span>
-          <span className="flex flex-wrap gap-1 mt-1 text-xs">
-            <Badge color={STATUS_COLOR[e.status]}>{STATUS_LABEL[e.status]}{e.held_by && NEEDS_HOLDER.includes(e.status) ? ` · ${e.held_by}` : ''}</Badge>
-            {e.qty_broken > 0 && e.status !== 'broken' && <Badge color={STATUS_COLOR.broken}>{e.qty_broken} ks pokazené</Badge>}
-            {e.qty_borrowed > 0 && e.status !== 'borrowed' && <Badge color={STATUS_COLOR.borrowed}>{e.qty_borrowed} ks požičané{e.held_by ? ` · ${e.held_by}` : ''}</Badge>}
-            {e.held_by && !NEEDS_HOLDER.includes(e.status) && !e.qty_borrowed && <span className="muted">u: {e.held_by}</span>}
+          <span className="flex flex-wrap gap-1 text-xs">
+            {c.free > 0 && <Badge color="#2e8b57">{c.free} voľné</Badge>}
+            {c.borrowed > 0 && <Badge color="#b7791f">{c.borrowed} požičané</Badge>}
+            {c.broken > 0 && <Badge color={STATUS_COLOR.broken}>{c.broken} pokazené</Badge>}
+            {c.lost > 0 && <Badge color={STATUS_COLOR.lost}>{c.lost} stratené</Badge>}
           </span>
-          {e.status_note && <span className="block text-xs mt-1">{e.status_note}</span>}
-          <span className="block text-xs muted mt-1">
+          {lent && (
+            <span className="block rounded-lg border px-3 py-2 text-sm" style={{ background: 'color-mix(in srgb, var(--color-sun) 28%, transparent)', borderColor: 'var(--color-sun)' }}>
+              <b className="block">Požičané: {e.held_by}</b>
+              {e.status_note && <span className="block text-xs">{e.status_note}</span>}
+            </span>
+          )}
+          {!lent && e.held_by && <span className="block text-sm pr-[46%]">U: {e.held_by}</span>}
+          {!lent && e.status_note && <span className="block text-xs pr-[46%]">{e.status_note}</span>}
+          {e.notes && <span className="block text-xs muted pr-[46%]">{e.notes}</span>}
+          <span className="block text-[11px] muted">
             {usage ? `${usage.events}× na evente · ${usage.days} dní` : 'Ešte nebola na evente'}
-            {usage?.last && <> · naposledy <Link to="/event/$id" params={{ id: usage.last.id }} className="text-[var(--color-sky)]" onClick={(ev) => ev.stopPropagation()}>{fmtRange(usage.last)}</Link></>}
+            {usage?.last && <> · <Link to="/event/$id" params={{ id: usage.last.id }} className="text-[var(--color-sky)]" onClick={(ev) => ev.stopPropagation()}>{fmtRange(usage.last)}</Link></>}
           </span>
-        </span>
-      </button>
+          {isAdmin && <span className="block text-xs font-semibold muted">✎ Upraviť</span>}
+        </button>
+      </div>
       {open && !editAll && <QuickStatus e={e} onSaved={onSaved} onEditAll={() => setEditAll(true)} />}
       {open && editAll && <div className="mt-3 border-t line pt-3"><ItemForm item={e} onDone={(saved) => { setEditAll(false); if (saved) onSaved() }} /></div>}
     </>

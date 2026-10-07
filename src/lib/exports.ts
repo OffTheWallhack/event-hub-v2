@@ -22,7 +22,19 @@ const monthsBetween = (from: string, to: string) => {
   return out
 }
 
-export const periodLabel = (from: string, to: string) => (from === to ? from : `${from}_${to}`)
+const span = (months: string[]) => {
+  const m = [...months].sort()
+  return [m[0], m[m.length - 1]] as const
+}
+const monthOf = (iso: string | null | undefined) => dayOf(iso).slice(0, 7)
+
+/** Názov súboru podľa výberu mesiacov: jeden mesiac, súvislé obdobie alebo „od_do_počet“. */
+export const periodLabel = (months: string[]) => {
+  const m = [...months].sort()
+  if (m.length === 1) return m[0]
+  const contiguous = m.every((x, i) => i === 0 || monthsBetween(m[i - 1], x).length === 2)
+  return contiguous ? `${m[0]}_${m[m.length - 1]}` : `${m[0]}_${m[m.length - 1]}_${m.length}mes`
+}
 
 type Cell = string | number | Date | null | { text: string; hyperlink: string }
 
@@ -118,7 +130,8 @@ type EventExportRow = {
   event_equipment: { quantity: number; returned_confirmed: boolean; issue: string; equipment: { name: string; category: string } | null }[]
 }
 
-export async function loadEvents(from: string, to: string) {
+export async function loadEvents(months: string[]) {
+  const [from, to] = span(months)
   const [start] = monthRange(from)
   const [, end] = monthRange(to)
   const { data, error } = await supabase
@@ -133,7 +146,7 @@ export async function loadEvents(from: string, to: string) {
     .order('start_date')
     .range(0, 4999)
   if (error) throw error
-  return data as unknown as EventExportRow[]
+  return (data as unknown as EventExportRow[]).filter((e) => months.includes(monthOf(e.start_date)))
 }
 
 const vehicleNames = (e: EventExportRow) =>
@@ -147,8 +160,8 @@ const equipmentText = (e: EventExportRow) =>
     .map((x) => (x.quantity > 1 ? `${x.quantity}× ` : '') + x.equipment!.name.replace(/^[^:]{2,20}:\s*/, ''))
     .join(', ')
 
-export async function exportEventCar(from: string, to: string) {
-  const events = await loadEvents(from, to)
+export async function exportEventCar(months: string[]) {
+  const events = await loadEvents(months)
   const wb = await newBook()
 
   const addSheet = (name: string, type: EventType, headers: string[], row: (e: EventExportRow) => Cell[]) => {
@@ -184,7 +197,7 @@ export async function exportEventCar(from: string, to: string) {
 
   addTechnikaSheets(wb, events)
 
-  await download(wb, `EVENT_CAR_${periodLabel(from, to)}.xlsx`)
+  await download(wb, `EVENT_CAR_${periodLabel(months)}.xlsx`)
   return { events: events.length }
 }
 
@@ -210,12 +223,12 @@ type PayoutExportRow = {
 
 const eurText = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(2)} EUR`
 
-export async function exportFinance(from: string, to: string) {
+export async function exportFinance(months: string[]) {
   const wb = await newBook()
   let docs = 0
   let total = 0
 
-  for (const month of monthsBetween(from, to)) {
+  for (const month of [...months].sort()) {
     const [s, e] = monthRange(month)
     const [ex, po] = await Promise.all([
       supabase
@@ -279,7 +292,7 @@ export async function exportFinance(from: string, to: string) {
     total += sum
   }
 
-  await download(wb, `FINANCE_${periodLabel(from, to)}.xlsx`)
+  await download(wb, `FINANCE_${periodLabel(months)}.xlsx`)
   return { docs, total: Math.round(total * 100) / 100 }
 }
 
@@ -365,17 +378,18 @@ function addTechnikaSheets(wb: import('exceljs').Workbook, events: EventExportRo
   fitColumns(types)
 }
 
-export async function exportTechnika(from: string, to: string) {
-  const events = await loadEvents(from, to)
+export async function exportTechnika(months: string[]) {
+  const events = await loadEvents(months)
   const wb = await newBook()
   addTechnikaSheets(wb, events)
-  await download(wb, `TECHNIKA_${periodLabel(from, to)}.xlsx`)
+  await download(wb, `TECHNIKA_${periodLabel(months)}.xlsx`)
   return { events: events.filter((e) => e.event_equipment.length > 0).length, pieces: events.reduce((t, e) => t + e.event_equipment.reduce((s, x) => s + x.quantity, 0), 0) }
 }
 
 // ---------------------------------------------------------------- DRIVERS (len admin)
 
-export async function exportDrivers(from: string, to: string) {
+export async function exportDrivers(months: string[]) {
+  const [from, to] = span(months)
   const [start] = monthRange(from)
   const [, end] = monthRange(to)
   const { data, error } = await supabase
@@ -386,7 +400,7 @@ export async function exportDrivers(from: string, to: string) {
     .range(0, 4999)
   if (error) throw error
   type Row = { amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null; events: { title: string; start_date: string; end_date: string | null } }
-  const rows = (data as unknown as Row[]).sort((a, b) => a.events.start_date.localeCompare(b.events.start_date))
+  const rows = (data as unknown as Row[]).filter((r) => months.includes(monthOf(r.events.start_date))).sort((a, b) => a.events.start_date.localeCompare(b.events.start_date))
 
   const wb = await newBook()
   const sum = wb.addWorksheet('DRIVERS')
@@ -429,13 +443,14 @@ export async function exportDrivers(from: string, to: string) {
   det.views = [{ state: 'frozen', ySplit: 1 }]
   fitColumns(det)
 
-  await download(wb, `DRIVERS_${periodLabel(from, to)}.xlsx`)
+  await download(wb, `DRIVERS_${periodLabel(months)}.xlsx`)
   return { payouts: rows.length, total: r2(rows.reduce((t, r) => t + withTax(r), 0)) }
 }
 
 // ---------------------------------------------------------------- PRODUCT (kartóny)
 
-export async function exportProduct(from: string, to: string) {
+export async function exportProduct(months: string[]) {
+  const [from, to] = span(months)
   const [start] = monthRange(from)
   const [, end] = monthRange(to)
   const [mv, st] = await Promise.all([
@@ -455,7 +470,7 @@ export async function exportProduct(from: string, to: string) {
     flavors: { name: string; label: string | null; sort_order: number } | null
     events: { title: string; departments: Department[] } | null
   }
-  const moves = mv.data as unknown as Mv[]
+  const moves = (mv.data as unknown as Mv[]).filter((m) => months.includes(monthOf(m.occurred_at)))
   const fl = (m: Mv) => m.flavors?.label || m.flavors?.name || '?'
   const TYPE_LABEL_SK: Record<string, string> = {
     delivery: 'Závoz', returned: 'Vrátené', event: 'Na event', opened_garage: 'Otvorené v garáži', damaged: 'Poškodené', adjustment: 'Inventúra / oprava',
@@ -513,6 +528,6 @@ export async function exportProduct(from: string, to: string) {
   dp.getColumn(3).numFmt = '0%'
   fitColumns(dp)
 
-  await download(wb, `PRODUCT_${periodLabel(from, to)}.xlsx`)
+  await download(wb, `PRODUCT_${periodLabel(months)}.xlsx`)
   return { movements: moves.length }
 }

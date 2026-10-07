@@ -82,3 +82,20 @@ export function splitName(n: string): [string, string | null] {
   const m = /^([^:]{2,20}):\s*(.+)$/.exec(n)
   return m ? [m[2], m[1]] : [n, null]
 }
+
+// Záložky na stránke Technika (ako v starej appke): odvodené z názvu a kategórie.
+export type EqGroup = 'Audio' | 'DJ' | 'Cooler' | 'Rekvizity' | 'Iné'
+export const EQ_GROUPS: EqGroup[] = ['Audio', 'DJ', 'Cooler', 'Rekvizity', 'Iné']
+export function eqGroup(e: Pick<Equipment, 'name' | 'category'>): EqGroup {
+  if (/cdj|konzol|\bmix\b|djm/i.test(e.name)) return 'DJ'
+  return e.category === 'audio' ? 'Audio' : e.category === 'coolers' ? 'Cooler' : e.category === 'branding' ? 'Rekvizity' : 'Iné'
+}
+
+/** Koľko kusov je voľných, požičaných a pokazených (pri jednom kuse sa berie aj stav). */
+export function eqCounts(e: Pick<Equipment, 'quantity' | 'qty_broken' | 'qty_borrowed' | 'status'>) {
+  const lentStatus = e.status === 'borrowed' || e.status === 'in_rent' || e.status === 'rented_out'
+  const borrowed = Math.min(e.quantity, e.qty_borrowed || (lentStatus ? e.quantity : 0))
+  const broken = Math.min(e.quantity - borrowed, e.qty_broken || (e.status === 'broken' ? e.quantity : 0))
+  const lost = e.status === 'lost' ? e.quantity : 0
+  return { free: Math.max(0, e.quantity - borrowed - broken - lost), borrowed, broken, lost }
+}

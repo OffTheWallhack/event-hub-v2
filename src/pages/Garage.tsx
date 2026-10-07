@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
 import { Photo, PhotoUpload } from '../components/Photo'
-import type { VehicleOpt } from '../lib/todos'
+import { GARAGE_VEHICLES, type VehicleOpt } from '../lib/todos'
 import { fmtDay, todayLocal } from '../lib/events'
 
 type Vehicle = VehicleOpt & { full_name: string | null; equipment_notes: string | null; is_generic: boolean; image_path: string | null; custom_photo_path: string | null }
@@ -23,7 +23,7 @@ export function Garage() {
       supabase.from('vehicles').select('id, name, full_name, equipment_notes, is_generic, image_path, custom_photo_path').eq('active', true).order('sort_order'),
       supabase.from('todos').select('scope, vehicle_id').neq('status', 'done').range(0, 999),
     ]).then(([v, t]) => {
-      const list = (v.data ?? []) as Vehicle[]
+      const list = ((v.data ?? []) as Vehicle[]).filter((x) => GARAGE_VEHICLES.includes(x.name))
       setVehicles(list)
       const c: Record<string, number> = {}
       for (const r of (t.data ?? []) as { scope: string; vehicle_id: string | null }[]) {
