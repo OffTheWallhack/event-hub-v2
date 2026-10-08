@@ -31,10 +31,17 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  text-shadow: var(--glow-shadow, none);
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+.card {
+  background: color-mix(in srgb, var(--card) var(--card-op, 100%), transparent);
+  border: var(--bw, 1px) solid var(--line);
+  border-radius: calc(var(--r, 16px) * 0.9);
+  box-shadow: var(--card-shadow, none);
+  -webkit-backdrop-filter: blur(var(--card-blur, 0px)); backdrop-filter: blur(var(--card-blur, 0px));
+}
 .muted { color: var(--muted); }
 .line { border-color: var(--line); }
 h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: 0.01em; }
@@ -54,18 +61,33 @@ h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: 0.01em;
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* Animovaná aura na pozadí (len niektoré témy; dá sa vypnúť v tému) */
+/* Animovaná aura na pozadí (efekt „Aura“; rýchlosť, sila a rozmazanie sa nastavujú v 🎨) */
 #aura { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; display: none; }
 [data-aura="on"] #aura { display: block; }
 #aura::before, #aura::after, #aura i {
   content: ''; position: absolute; width: 85vmax; height: 85vmax; border-radius: 50%;
-  filter: blur(70px); opacity: var(--aura-op, 0.5); will-change: transform;
+  filter: blur(var(--aura-blur, 70px)); opacity: var(--aura-op, 0.5); will-change: transform;
 }
-#aura::before { background: radial-gradient(circle, var(--aura1), transparent 62%); left: -35vmax; top: -35vmax; animation: aura-a 19s ease-in-out infinite alternate; }
-#aura::after { background: radial-gradient(circle, var(--aura2), transparent 62%); right: -40vmax; bottom: -40vmax; animation: aura-b 23s ease-in-out infinite alternate; }
-#aura i { background: radial-gradient(circle, var(--aura3), transparent 62%); left: 5vmax; top: 25vh; animation: aura-c 29s ease-in-out infinite alternate; }
+#aura::before { background: radial-gradient(circle, var(--aura1), transparent 62%); left: -35vmax; top: -35vmax; animation: aura-a calc(19s / var(--fx-speed, 1)) ease-in-out infinite alternate; }
+#aura::after { background: radial-gradient(circle, var(--aura2), transparent 62%); right: -40vmax; bottom: -40vmax; animation: aura-b calc(23s / var(--fx-speed, 1)) ease-in-out infinite alternate; }
+#aura i { background: radial-gradient(circle, var(--aura3), transparent 62%); left: 5vmax; top: 25vh; animation: aura-c calc(29s / var(--fx-speed, 1)) ease-in-out infinite alternate; }
 @keyframes aura-a { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(35vmax, 25vmax) scale(1.25); } }
 @keyframes aura-b { 0% { transform: translate(0, 0) scale(1.1); } 100% { transform: translate(-30vmax, -35vmax) scale(0.9); } }
 @keyframes aura-c { 0% { transform: translate(0, 0) scale(0.9); } 100% { transform: translate(40vmax, -20vmax) scale(1.2); } }
-@media (prefers-reduced-motion: reduce) { #aura::before, #aura::after, #aura i { animation: none; } }
+
+/* Canvas animácie (vlny, mriežka, matrix, hviezdy, bubliny) */
+#fx { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; display: none; }
+
+/* CRT: riadky a stmavené okraje */
+#crt { position: fixed; inset: 0; z-index: 9999; pointer-events: none; display: none; }
+[data-crt="on"] #crt {
+  display: block;
+  background:
+    repeating-linear-gradient(to bottom, rgba(0,0,0,var(--scan-a, 0)) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,var(--vig-a, 0)) 100%);
+}
+
+/* Text na akcentových tlačidlách: tmavý, keď je akcent svetlý (napr. zelený terminál) */
+:root[data-onaccent="dark"] [class~="bg-[var(--color-signal)]"] { color: #000; }
+
 .glass { background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }

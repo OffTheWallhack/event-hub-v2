@@ -39,7 +39,7 @@ export function Layout() {
                   to={n.to}
                   activeOptions={{ exact: n.to === '/' }}
                   className="flex flex-col items-center py-1.5 rounded-xl text-[11px] leading-tight font-medium muted"
-                  activeProps={{ className: 'flex flex-col items-center py-1.5 rounded-xl text-[11px] leading-tight font-semibold bg-[var(--color-signal)] text-white!' }}
+                  activeProps={{ className: 'flex flex-col items-center py-1.5 rounded-xl text-[11px] leading-tight font-semibold bg-[var(--color-signal)] text-[var(--on-accent,#fff)]!' }}
                 >
                   <span className="text-[26px] leading-none">{n.icon}</span>
                   <span className="mt-1 max-w-full truncate px-0.5">{n.label}</span>

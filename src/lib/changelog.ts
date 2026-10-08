@@ -4,6 +4,17 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.2.0',
+    date: '8. 10. 2026',
+    title: 'Vzhľad: nové témy a posuvníky na všetko',
+    items: [
+      'Nové témy: PSP (vlny), Wii, Terminal (matrix), Amber CRT, Game Boy, Synthwave, Vesmír',
+      '🎨 teraz otvorí panel: odtieň, sýtosť, jas, kontrast, farby, priehľadnosť a zaoblenie kariet, písmo, žiara, CRT riadky',
+      'Animácie pozadia: aura, vlny, mriežka, matrix, hviezdy, bubliny – s rýchlosťou, silou a vlastnými farbami',
+      'Vlastné nastavenie sa dá uložiť ako „Moja“; animácie už nevypína systémové „znížiť pohyb“',
+    ],
+  },
+  {
     version: '1.1.0',
     date: '7. 10. 2026',
     title: 'Témy, Technika ako v starej appke, výber mesiacov',

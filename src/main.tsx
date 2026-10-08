@@ -3,13 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import './styles.css'
 import { AuthProvider, useAuth } from './lib/auth'
-import { applyTheme, getTheme } from './lib/theme'
+import { applyCfg, loadCfg } from './lib/theme'
 import { router } from './router'
 import { Login } from './pages/Login'
 import { Pending } from './pages/Pending'
 import { BriefPage } from './pages/BriefPage'
 
-applyTheme(getTheme())
+applyCfg(loadCfg())
 
 function App() {
   const { loading, session, profile, isAdmin } = useAuth()

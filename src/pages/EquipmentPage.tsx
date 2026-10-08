@@ -117,7 +117,7 @@ function ItemCard({ e, usage, isAdmin, open, onToggle, onSaved }: {
   const cat = splitName(e.name)[1] ?? CATEGORY_LABEL[e.category]
   return (
     <>
-      <div className="relative overflow-hidden rounded-xl">
+      <div className="relative overflow-hidden rounded-md">
         <Photo
           kind="equipment-photos"
           path={e.photo_path}
