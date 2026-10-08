@@ -1,7 +1,7 @@
 // Vzhľad appky: predvoľby (PSP, Wii, Terminal…) + posuvníky na všetko. Ukladá sa v prehliadači (localStorage).
 import { setFx, type FxMode } from './fx'
 
-export type FontId = 'default' | 'system' | 'rounded' | 'mono' | 'terminal' | 'serif'
+export type FontId = 'default' | 'system' | 'opensans' | 'rounded' | 'exo' | 'techno' | 'tahoma' | 'mono' | 'typewriter' | 'terminal' | 'pixel' | 'serif' | 'bookish'
 
 export type Cfg = {
   preset: string
@@ -36,7 +36,7 @@ const aura = (a: string, b: string, c: string, int = 50): Partial<Cfg> => ({ fx:
 export const PRESETS: Preset[] = [
   P('psp', 'PSP', {
     bg: '#071252', fg: '#f4f7ff', card: '#2a3a9c', line: '#8ea2ff', muted: '#b4c0ff', accent: '#5b8cff',
-    cardOp: 38, blur: 14, radius: 8, border: 1, shadow: 10, font: 'system',
+    cardOp: 38, blur: 14, radius: 8, border: 1, shadow: 10, font: 'opensans',
     fx: 'waves', fx1: '#5b8cff', fx2: '#a06bff', fx3: '#3be3ff', fxSpeed: 90, fxInt: 80,
   }),
   P('wii', 'Wii', {
@@ -55,16 +55,46 @@ export const PRESETS: Preset[] = [
   }),
   P('gameboy', 'Game Boy', {
     bg: '#9bbc0f', fg: '#0f380f', card: '#8bac0f', line: '#306230', muted: '#306230', accent: '#0f380f',
-    radius: 4, border: 2, font: 'terminal', fontScale: 112, scan: 18,
+    radius: 4, border: 2, font: 'pixel', fontScale: 92, scan: 18,
   }),
   P('synthwave', 'Synthwave', {
     bg: '#12062b', fg: '#ffeafe', card: '#241047', line: '#7a3cff', muted: '#c79bff', accent: '#ff3ec9',
-    cardOp: 60, blur: 8, radius: 10, border: 1, shadow: 14, glow: 2,
+    cardOp: 60, blur: 8, radius: 10, border: 1, shadow: 14, glow: 2, font: 'techno',
     fx: 'grid', fx1: '#ffe14a', fx2: '#ff2e93', fx3: '#7a3cff', fxSpeed: 80, fxInt: 80,
   }),
   P('space', 'Vesmír', {
     bg: '#02030c', fg: '#e8ecff', card: '#0b1030', line: '#27337a', muted: '#8d9ad6', accent: '#7c8cff',
-    cardOp: 60, blur: 8, radius: 14, fx: 'stars', fx1: '#ffffff', fx2: '#9fb4ff', fx3: '#ffd9a0', fxSpeed: 70, fxInt: 70,
+    cardOp: 60, blur: 8, radius: 14, font: 'exo', fx: 'stars', fx1: '#ffffff', fx2: '#9fb4ff', fx3: '#ffd9a0', fxSpeed: 70, fxInt: 70,
+  }),
+  P('winxp', 'Windows XP', {
+    bg: '#ece9d8', fg: '#101010', card: '#ffffff', line: '#7f9db9', muted: '#5a5a5a', accent: '#245edb',
+    radius: 6, border: 1, font: 'tahoma',
+  }),
+  P('win95', 'Windows 95', {
+    bg: '#c0c0c0', fg: '#000000', card: '#dfdfdf', line: '#000000', muted: '#404040', accent: '#000080',
+    radius: 0, border: 2, font: 'tahoma',
+  }),
+  P('c64', 'Commodore 64', {
+    bg: '#40318d', fg: '#b8b0ff', card: '#352879', line: '#7869c4', muted: '#9a8fe6', accent: '#7869c4',
+    radius: 0, border: 2, font: 'terminal', fontScale: 112, scan: 15,
+  }),
+  P('cyber', 'Cyberpunk', {
+    bg: '#0a0a0a', fg: '#fcee0a', card: '#14130a', line: '#7a7205', muted: '#c9bd1a', accent: '#00f0ff',
+    cardOp: 80, radius: 2, border: 1, shadow: 8, glow: 2, font: 'techno',
+    fx: 'grid', fx1: '#fcee0a', fx2: '#ff003c', fx3: '#00f0ff', fxSpeed: 70, fxInt: 40,
+  }),
+  P('vapor', 'Vaporwave', {
+    bg: '#1b1035', fg: '#ffd6f5', card: '#2d1b5a', line: '#ff71ce', muted: '#c58cff', accent: '#01cdfe',
+    cardOp: 70, blur: 10, radius: 18, shadow: 10, font: 'exo', ...aura('#ff71ce', '#01cdfe', '#b967ff', 55),
+  }),
+  P('sunset', 'Západ slnka', {
+    bg: '#2a0f2e', fg: '#fff0e0', card: '#3d1640', line: '#7a2a5a', muted: '#e0a0b0', accent: '#ff7a18',
+    cardOp: 75, blur: 8, radius: 18, font: 'exo', ...aura('#ff7a18', '#ff3d81', '#ffd23f', 55),
+  }),
+  P('nord', 'Nord', { bg: '#2e3440', fg: '#eceff4', card: '#3b4252', line: '#4c566a', muted: '#a3adc0', accent: '#88c0d0', radius: 10, font: 'opensans' }),
+  P('paper', 'Papier', {
+    bg: '#f6f1e6', fg: '#2a2118', card: '#fffaf0', line: '#cbbd9f', muted: '#7a6c55', accent: '#9c2f2f',
+    radius: 3, border: 1, font: 'bookish',
   }),
   P('light', 'Svetlá', {}),
   P('sand', 'Piesok', { bg: '#efe3cc', fg: '#2b2112', card: '#fbf3e2', line: '#d6c39c', muted: '#7a6a48' }),
@@ -80,15 +110,25 @@ export const PRESETS: Preset[] = [
   P('redbull', 'Red Bull', { bg: '#0a1633', fg: '#f5f7ff', card: '#101f45', line: '#263a73', muted: '#93a3d4', ...aura('#ffc800', '#d7263d', '#2f6fdd') }),
 ]
 
+const SYS = '-apple-system, system-ui, "Helvetica Neue", Arial, sans-serif'
+const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace'
+const F = (label: string, body: string, display: string = body) => ({ label, body, display })
 const FONTS: Record<FontId, { label: string; body: string; display: string }> = {
-  default: { label: 'Barlow', body: '"Barlow", system-ui, sans-serif', display: '"Barlow Condensed", "Barlow", system-ui, sans-serif' },
-  system: { label: 'Systém', body: '-apple-system, system-ui, "Helvetica Neue", Arial, sans-serif', display: '-apple-system, system-ui, "Helvetica Neue", Arial, sans-serif' },
-  rounded: { label: 'Okrúhle', body: '"Nunito", ui-rounded, system-ui, sans-serif', display: '"Nunito", ui-rounded, system-ui, sans-serif' },
-  mono: { label: 'Mono', body: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace', display: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' },
-  terminal: { label: 'Terminál', body: '"VT323", ui-monospace, Menlo, monospace', display: '"VT323", ui-monospace, Menlo, monospace' },
-  serif: { label: 'Serif', body: 'ui-serif, Georgia, "Times New Roman", serif', display: 'ui-serif, Georgia, "Times New Roman", serif' },
+  default: F('Barlow', '"Barlow", system-ui, sans-serif', '"Barlow Condensed", "Barlow", system-ui, sans-serif'),
+  system: F('Systém', SYS),
+  opensans: F('Open Sans', `"Open Sans", ${SYS}`),
+  rounded: F('Okrúhle (Wii)', `"Nunito", ui-rounded, ${SYS}`),
+  exo: F('Exo (sci-fi)', `"Exo 2", ${SYS}`),
+  techno: F('Techno', `"Rajdhani", ${SYS}`, `"Orbitron", "Rajdhani", ${SYS}`),
+  tahoma: F('Windows', `Tahoma, Verdana, "Segoe UI", ${SYS}`),
+  mono: F('Mono', MONO),
+  typewriter: F('Písací stroj', `"Courier Prime", "Courier New", ${MONO}`),
+  terminal: F('Terminál', `"VT323", ${MONO}`),
+  pixel: F('Pixel', `"Silkscreen", "VT323", ${MONO}`),
+  serif: F('Serif', 'ui-serif, Georgia, "Times New Roman", serif'),
+  bookish: F('Kniha', `"Lora", Georgia, serif`, `"Playfair Display", "Lora", Georgia, serif`),
 }
-export const FONT_LIST = (Object.keys(FONTS) as FontId[]).map((id) => ({ id, label: FONTS[id].label }))
+export const FONT_LIST = (Object.keys(FONTS) as FontId[]).map((id) => ({ id, label: FONTS[id].label, family: FONTS[id].body }))
 
 // ---- farby ----
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v))

@@ -4,6 +4,16 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.3.0',
+    date: '8. 10. 2026',
+    title: 'Viac tém a písma k témam',
+    items: [
+      'Nové témy: Windows XP, Windows 95, Commodore 64, Cyberpunk, Vaporwave, Západ slnka, Nord, Papier',
+      'Každá téma má vlastné písmo (PSP Open Sans, Wii okrúhle, Terminal VT323, Game Boy pixel, Synthwave techno…)',
+      'Písmo sa dá vybrať ručne (13 druhov, každé ukázané svojím písmom) a zaškrtnúť „Nechať moje písmo pri zmene témy“',
+    ],
+  },
+  {
     version: '1.2.0',
     date: '8. 10. 2026',
     title: 'Vzhľad: nové témy a posuvníky na všetko',
