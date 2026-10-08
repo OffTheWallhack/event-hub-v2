@@ -3,6 +3,7 @@ import { supabase, type Profile, type Role } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { DriveBox } from '../components/DriveBox'
 import { BackupBox } from '../components/BackupBox'
+import { ThemePicker } from '../components/ThemePicker'
 
 const ROLE_LABEL: Record<Role, string> = { pending: 'Čaká', driver: 'Vodič (čítanie)', admin: 'Admin' }
 
@@ -68,6 +69,7 @@ export function Users() {
           )
         })}
       </ul>
+      <ThemePicker />
       <DriveBox />
       <BackupBox />
     </section>

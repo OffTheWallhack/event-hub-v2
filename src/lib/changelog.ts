@@ -4,6 +4,12 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.4.1',
+    date: '8. 10. 2026',
+    title: 'Čistejšie horné menu',
+    items: ['Témy a vzhľad sú schované v Nastaveniach (karta „Vzhľad a témy“), v hornej lište ostáva len verzia a Odhlásiť'],
+  },
+  {
     version: '1.4.0',
     date: '8. 10. 2026',
     title: 'Zálohy na Drive a kalendár s úlohami',

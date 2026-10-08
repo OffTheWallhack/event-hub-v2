@@ -47,7 +47,14 @@ export function ThemePicker() {
 
   return (
     <>
-      <button onClick={() => setOpen(!open)} className="text-sm px-2 py-1 rounded-lg border line shrink-0" aria-label="Farebná téma">🎨</button>
+      <button onClick={() => setOpen(!open)} className="card p-4 mt-4 w-full text-left flex items-center gap-3" aria-label="Farebná téma">
+        <span className="text-2xl">🎨</span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold text-sm">Vzhľad a témy</span>
+          <span className="block muted text-xs">Predvoľby (PSP, Wii, Terminal…), farby, animácie, písmo. Teraz: {preset?.label ?? 'vlastné'}</span>
+        </span>
+        <span className="muted">›</span>
+      </button>
       {open && createPortal(
         <div className="fixed z-50 inset-x-0 bottom-0 max-h-[52vh] overflow-y-auto rounded-t-2xl border-t line p-3 pb-6 shadow-2xl" style={{ background: 'color-mix(in srgb, var(--bg) 94%, transparent)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
           <div className="flex items-center gap-2 mb-2 sticky top-0 -mt-1 pt-1 pb-1" style={{ background: 'inherit' }}>

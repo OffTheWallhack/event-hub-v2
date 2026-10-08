@@ -1,6 +1,5 @@
 import { Link, Outlet } from '@tanstack/react-router'
 import { useAuth } from '../lib/auth'
-import { ThemePicker } from './ThemePicker'
 import { Reminders } from './Reminders'
 import { BottomSlot } from './BottomBar'
 
@@ -26,7 +25,6 @@ export function Layout() {
           <Link to="/info" className="text-[11px] px-2 py-0.5 rounded-lg border line shrink-0 muted" title="Info o verzii a stave">
             ⓘ v{__APP_VERSION__}
           </Link>
-          <ThemePicker />
           <button onClick={signOut} className="text-xs muted shrink-0 px-1" title={profile?.email ?? ''}>
             Odhlásiť
           </button>
