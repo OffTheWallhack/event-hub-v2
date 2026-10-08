@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
+import { CalendarBox } from '../components/CalendarBox'
 import { GARAGE_VEHICLES, type VehicleOpt } from '../lib/todos'
 
 export function Todos() {
@@ -14,6 +15,7 @@ export function Todos() {
     <section className="flex flex-col gap-4 min-w-0">
       <h1 className="display text-4xl font-bold">To-Do</h1>
       <TodoList vehicles={vehicles} isAdmin={isAdmin} />
+      {isAdmin && <CalendarBox />}
     </section>
   )
 }

@@ -4,6 +4,15 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.4.0',
+    date: '8. 10. 2026',
+    title: 'Zálohy na Drive a kalendár s úlohami',
+    items: [
+      'Záloha všetkých tabuliek (JSON) na Google Drive každý deň o 0:00 a 12:00, tlačidlo „Zálohovať teraz“ v Nastaveniach',
+      'To-Do: odkaz do Kalendára iPhonu – úlohy s termínom alebo pripomienkou sa objavia v kalendári s upozornením',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '8. 10. 2026',
     title: 'Viac tém a písma k témam',

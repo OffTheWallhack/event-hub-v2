@@ -46,3 +46,5 @@ Používateľ (Robert) píše po slovensky, krátko. Odpovedaj po slovensky, jed
 - [x] Presun súborov: fotky techniky, príchutí a áut zo starej appky sú v bucket `media` (bločky sú na Drive)
 - [x] Vzhľad: panel 🎨 (src/lib/theme.ts, fx.ts, ThemePicker.tsx) – 27 predvolieb (PSP, Wii, Terminal…), posuvníky, animácie pozadia, písma; ukladá sa v prehliadači
 - [x] Info stránka (/info): verzia, stav služieb, zoznam zmien (src/lib/changelog.ts – pri každej väčšej zmene pridať riadok a zvýšiť verziu v package.json)
+- [x] Zálohy: Edge Function `backup` (cron `backup-hourly` každú hodinu, zálohuje o 0:00 a 12:00 slovenského času; JSON všetkých tabuliek okrem private_kv → Drive: Event Hub / Zálohy / YYYY-MM; stav + „Zálohovať teraz“ v Nastaveniach)
+- [x] Kalendár s úlohami do iPhonu: Edge Function `todo-ics` (tajný token v `private_kv.todo_ics_token`, odkaz vidí len admin na stránke To-Do)
