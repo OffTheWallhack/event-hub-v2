@@ -94,12 +94,16 @@ export const PRESETS: Preset[] = [
   P('paddock', 'Paddock', {
     bg: '#0c0d10', fg: '#f2f3f5', card: '#16181d', line: '#2c3038', muted: '#8d94a1', accent: '#ffc800',
     cardOp: 96, radius: 2, border: 2, shadow: 0, font: 'techno', fontScale: 102,
-    fx: 'grid', fx1: '#ffc800', fx2: '#d7263d', fx3: '#2f6fdd', fxSpeed: 40, fxInt: 18,
   }),
   P('liquidglass', 'Liquid glass', {
-    bg: '#0b1020', fg: '#f4f7ff', card: '#ffffff', line: '#ffffff', muted: '#aab4d4', accent: '#7aa7ff',
+    bg: '#0b1020', fg: '#f4f7ff', card: '#ffffff', line: '#a9b6e6', muted: '#aab4d4', accent: '#7aa7ff',
     cardOp: 12, blur: 24, radius: 26, border: 1, shadow: 8, font: 'system',
     ...aura('#5b7cff', '#ff6bd6', '#3be3c8', 60),
+  }),
+  P('ps2', 'PS2 Memory Card', {
+    bg: '#04050c', fg: '#eef2ff', card: '#1a2240', line: '#5a6aa8', muted: '#9aa6cf', accent: '#5e8bff',
+    cardOp: 62, blur: 10, radius: 6, border: 1, shadow: 12, glow: 1, font: 'opensans',
+    fx: 'ps2', fx1: '#3a5cff', fx2: '#b04bff', fx3: '#1fc8ff', fxSpeed: 60, fxInt: 70,
   }),
   P('nord', 'Nord', { bg: '#2e3440', fg: '#eceff4', card: '#3b4252', line: '#4c566a', muted: '#a3adc0', accent: '#88c0d0', radius: 10, font: 'opensans' }),
   P('paper', 'Papier', {
@@ -173,6 +177,13 @@ function tweak(hex: string, c: Cfg, kind: 'surface' | 'text' | 'color', dark: bo
   return hslToHex(h + c.hue, clamp(s * (c.sat / 100), 0, 1), L)
 }
 const lum = (hex: string) => hexToHsl(hex)[2]
+/** Má na tejto farbe byť čierny text? Podľa skutočného kontrastu (WCAG), aby bol čitateľný aj na žltej či zelenej. */
+function darkText(hex: string): boolean {
+  const n = parseInt(hex.slice(1), 16)
+  const ch = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
+  const L = 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255)
+  return (L + 0.05) / 0.05 > 1.05 / (L + 0.05)
+}
 
 // ---- ukladanie ----
 const KEY = 'themeCfg'
@@ -227,14 +238,14 @@ export function applyCfg(c: Cfg) {
   root.style.fontSize = `${c.fontScale}%`
 
   const accent = tweak(c.accent, c, 'color', dark)
-  root.dataset.onaccent = lum(accent) > 0.58 ? 'dark' : 'light'
+  root.dataset.onaccent = darkText(accent) ? 'dark' : 'light'
   set('--bg', bg)
   set('--card', tweak(c.card, c, 'surface', dark))
   set('--line', tweak(c.line, c, 'surface', dark))
   set('--fg', tweak(c.fg, c, 'text', dark))
   set('--muted', tweak(c.muted, c, 'text', dark))
   set('--color-signal', accent)
-  set('--on-accent', lum(accent) > 0.58 ? '#000' : '#fff')
+  set('--on-accent', darkText(accent) ? '#000' : '#fff')
   set('--font-sans', font.body)
   set('--font-display', font.display)
 

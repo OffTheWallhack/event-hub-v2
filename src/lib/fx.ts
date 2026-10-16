@@ -1,5 +1,5 @@
-// Animované pozadie na canvase (vlny, mriežka, matrix, hviezdy, bubliny). Aura je čisté CSS (styles.css).
-export type FxMode = 'none' | 'aura' | 'waves' | 'grid' | 'matrix' | 'stars' | 'bubbles'
+// Animované pozadie na canvase (vlny, mriežka, matrix, hviezdy, bubliny, PS2). Aura je čisté CSS (styles.css).
+export type FxMode = 'none' | 'aura' | 'waves' | 'grid' | 'matrix' | 'stars' | 'bubbles' | 'ps2'
 export type FxOpts = { mode: FxMode; colors: [string, string, string]; speed: number; int: number }
 
 let canvas: HTMLCanvasElement | null = null
@@ -23,7 +23,7 @@ function ensureCanvas() {
 export function setFx(o: FxOpts) {
   cancelAnimationFrame(raf)
   stop?.(); stop = null
-  const canvasModes: FxMode[] = ['waves', 'grid', 'matrix', 'stars', 'bubbles']
+  const canvasModes: FxMode[] = ['waves', 'grid', 'matrix', 'stars', 'bubbles', 'ps2']
   if (!canvasModes.includes(o.mode)) { if (canvas) canvas.style.display = 'none'; return }
   const cv = ensureCanvas()
   cv.style.display = 'block'
@@ -51,6 +51,9 @@ export function setFx(o: FxOpts) {
   const initBubbles = () => { bubbles = Array.from({ length: Math.round(8 + o.int * 22) }, (_, i) => ({ x: rnd(), y: rnd(), r: (0.02 + rnd() * 0.06), v: 0.02 + rnd() * 0.05, p: rnd() * 6, c: cols[i % 3] })) }
   if (o.mode === 'stars') initStars()
   if (o.mode === 'bubbles') initBubbles()
+  // PS2: priesvitné kocky, ktoré pomaly stúpajú a otáčajú sa
+  let cubes: { x: number; y: number; s: number; v: number; a: number; r: number; c: string }[] = []
+  if (o.mode === 'ps2') cubes = Array.from({ length: Math.round(5 + o.int * 9) }, (_, i) => ({ x: rnd(), y: rnd(), s: 0.04 + rnd() * 0.07, v: 0.008 + rnd() * 0.02, a: rnd() * 6, r: (rnd() - 0.5) * 0.6, c: cols[i % 3] }))
   const initDrops = () => { drops = Array.from({ length: Math.ceil(w / fs) }, () => Math.floor(rnd() * -40)) }
   initDrops()
 
@@ -147,6 +150,46 @@ export function setFx(o: FxOpts) {
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill()
         ctx.strokeStyle = rgba(b.c, 0.35); ctx.lineWidth = dpr; ctx.stroke()
       }
+    } else if (o.mode === 'ps2') {
+      ctx.clearRect(0, 0, w, h)
+      const M = Math.max(w, h)
+      // svetlá v rohoch (ako v menu Memory Card), pomaly dýchajú
+      const corner = (x: number, y: number, col: string, ph: number) => {
+        const a = 0.32 + 0.14 * Math.sin(t * 0.5 + ph)
+        const g = ctx.createRadialGradient(x, y, 0, x, y, M * 0.75)
+        g.addColorStop(0, rgba(col, a)); g.addColorStop(0.45, rgba(col, a * 0.3)); g.addColorStop(1, rgba(col, 0))
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h)
+      }
+      ctx.globalCompositeOperation = 'lighter'
+      corner(0, 0, c1, 0); corner(w, 0, c2, 2.1); corner(w * 0.5, h * 1.15, c3, 4.2)
+      // podlaha s odleskom a horizont
+      const hz = h * 0.66
+      const fl = ctx.createLinearGradient(0, hz, 0, h)
+      fl.addColorStop(0, 'rgba(255,255,255,0.10)'); fl.addColorStop(0.08, 'rgba(255,255,255,0.03)'); fl.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.fillStyle = fl; ctx.fillRect(0, hz, w, h - hz)
+      const ln = ctx.createLinearGradient(0, 0, w, 0)
+      ln.addColorStop(0, 'rgba(255,255,255,0)'); ln.addColorStop(0.5, 'rgba(255,255,255,0.35)'); ln.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx.fillStyle = ln; ctx.fillRect(0, hz, w, Math.max(1, dpr))
+      // kocky (izometrický drôtený model, priesvitné steny)
+      for (const c of cubes) {
+        c.y -= dt * c.v * o.speed; c.a += dt * c.r * o.speed
+        if (c.y < -0.2) { c.y = 1.2; c.x = rnd() }
+        const S = c.s * Math.min(w, h), cx = c.x * w, cy = c.y * h
+        const ca = Math.cos(c.a), sa = Math.sin(c.a)
+        const P = (x: number, y: number, z: number) => {
+          const rx = x * ca - z * sa, rz = x * sa + z * ca
+          return [cx + rx * S, cy + (y * 0.9 + rz * 0.35) * S] as const
+        }
+        const v = [[-1, -1, -1], [1, -1, -1], [1, -1, 1], [-1, -1, 1], [-1, 1, -1], [1, 1, -1], [1, 1, 1], [-1, 1, 1]].map(([x, y, z]) => P(x, y, z))
+        const top = [0, 1, 2, 3].map((i) => v[i])
+        ctx.fillStyle = rgba(c.c, 0.06)
+        ctx.beginPath(); top.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.closePath(); ctx.fill()
+        ctx.strokeStyle = rgba(c.c, 0.28); ctx.lineWidth = dpr
+        ctx.beginPath()
+        for (const [a, b] of [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]]) { ctx.moveTo(v[a][0], v[a][1]); ctx.lineTo(v[b][0], v[b][1]) }
+        ctx.stroke()
+      }
+      ctx.globalCompositeOperation = 'source-over'
     }
   }
 

@@ -5,7 +5,7 @@ import type { FxMode } from '../lib/fx'
 
 const FX_LIST: { id: FxMode; label: string }[] = [
   { id: 'none', label: 'Žiadne' }, { id: 'aura', label: 'Aura' }, { id: 'waves', label: 'Vlny' }, { id: 'grid', label: 'Mriežka' },
-  { id: 'matrix', label: 'Matrix' }, { id: 'stars', label: 'Hviezdy' }, { id: 'bubbles', label: 'Bubliny' },
+  { id: 'matrix', label: 'Matrix' }, { id: 'stars', label: 'Hviezdy' }, { id: 'bubbles', label: 'Bubliny' }, { id: 'ps2', label: 'PS2' },
 ]
 
 /** Tlačidlo 🎨 v hlavičke: predvoľby (PSP, Wii, Terminal…) a posuvníky na farby, animáciu, tvar aj písmo. */

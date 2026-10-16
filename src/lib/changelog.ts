@@ -6,8 +6,13 @@ export const CHANGELOG: ChangeEntry[] = [
   {
     version: '1.5.0',
     date: '16. 10. 2026',
-    title: 'Dve nové témy',
-    items: ['Paddock: tmavé karbónové pozadie, ostré rohy, žltý akcent', 'Liquid glass: priehľadné sklenené karty a farebné svetlo na pozadí'],
+    title: 'Tri nové témy',
+    items: [
+      'Paddock: tmavé karbónové pozadie, ostré rohy, žltý akcent',
+      'Liquid glass: priehľadné sklenené karty a farebné svetlo na pozadí',
+      'PS2 Memory Card: farebné svetlá v rohoch, lesklá podlaha a pomaly sa otáčajúce kocky (nový efekt pozadia „PS2“)',
+      'Text na farebných tlačidlách sa volí podľa skutočného kontrastu – na žltej či zelenej je teraz čierny a čitateľný',
+    ],
   },
   {
     version: '1.4.1',

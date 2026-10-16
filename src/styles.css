@@ -91,3 +91,12 @@ h1, h2, h3, .display { font-family: var(--font-display); letter-spacing: 0.01em;
 :root[data-onaccent="dark"] [class~="bg-[var(--color-signal)]"] { color: #000; }
 
 .glass { background: color-mix(in srgb, var(--bg) 82%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+/* Paddock: jemná karbónová textúra pozadia */
+:root[data-theme="paddock"] body {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,0.35) 0 2px, transparent 2px 4px);
+  background-attachment: fixed;
+}
