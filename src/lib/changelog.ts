@@ -16,7 +16,7 @@ export const CHANGELOG: ChangeEntry[] = [
       'Stránka eventu: logistika hore, náklady nižšie, jedno tlačidlo Upraviť',
       'Technika ako prehľadný zoznam s náhľadom, To-Do s prepínačom Otvorené / Hotové',
       'Polia vo formulároch už na iPhone nepribližujú stránku pri písaní',
-      'Ikona appky na plochu iPhonu: EHv2 so Zuborom',
+      'Ikona appky na plochu iPhonu: Event / Hub / v2 so Zuborom na bielom pozadí',
     ],
   },
   {
