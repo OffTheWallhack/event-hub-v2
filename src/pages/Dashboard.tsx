@@ -5,6 +5,8 @@ import { useAuth } from '../lib/auth'
 import { SyncBox } from '../components/SyncBox'
 import { DayPanel } from '../components/DayPanel'
 import { BottomBar } from '../components/BottomBar'
+import { ErrorText, PageHeader, Section, Stat } from '../components/ui'
+import { ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react'
 import { monthRange, summarize } from '../lib/finance'
 import { eur } from '../lib/events'
 import {
@@ -131,128 +133,129 @@ export function Dashboard() {
   const goMonth = (t: { y: number; m: number }) => navigate({ to: '/', search: { m: monthKey(t.y, t.m) } })
 
   return (
-    <section>
+    <div className="page">
       <DayPanel isAdmin={isAdmin} />
-      <h1 className="display text-4xl font-bold capitalize whitespace-nowrap">
-        {monthName(m)} <span className="muted font-medium">{y}</span>
-      </h1>
+
+      <PageHeader
+        title={<span className="capitalize">{monthName(m)} <span className="muted font-semibold">{y}</span></span>}
+        actions={
+          <button type="button" aria-pressed={showCancelled} onClick={() => setShowCancelled(!showCancelled)} className="chip">
+            {showCancelled ? <Eye className="w-4 h-4" aria-hidden /> : <EyeOff className="w-4 h-4" aria-hidden />}Zrušené
+          </button>
+        }
+      />
 
       <BottomBar>
         <div className="flex items-center gap-2">
-          <button onClick={() => goMonth(prev)} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Predošlý mesiac">‹</button>
-          <button onClick={() => navigate({ to: '/', search: {} })} className="flex-1 h-11 rounded-lg border line font-semibold capitalize">
+          <button onClick={() => goMonth(prev)} className="btn btn-icon" aria-label="Predošlý mesiac"><ChevronLeft aria-hidden /></button>
+          <button onClick={() => navigate({ to: '/', search: {} })} className="btn flex-1 capitalize" title="Späť na dnešok">
             {monthName(m)} {y}
           </button>
-          <button onClick={() => goMonth(next)} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Ďalší mesiac">›</button>
+          <button onClick={() => goMonth(next)} className="btn btn-icon" aria-label="Ďalší mesiac"><ChevronRight aria-hidden /></button>
         </div>
       </BottomBar>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs">
-        {TYPES.map((t) => (
-          <span key={t} className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: TYPE_COLOR[t] }} />
-            {TYPE_LABEL[t]}
-          </span>
-        ))}
-        <label className="flex items-center gap-1 ml-auto muted">
-          <input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />
-          Zrušené
-        </label>
-      </div>
+      <ErrorText>{error}</ErrorText>
 
-      {error && <p className="mt-3 text-[var(--color-signal)]">{error}</p>}
-
-      <div className="card mt-3 overflow-hidden">
-        <div className="grid grid-cols-7 border-b line text-[11px] font-semibold muted">
-          {WEEKDAYS.map((d) => <div key={d} className="px-1.5 py-1">{d}</div>)}
+      <div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-2 text-xs">
+          {TYPES.map((t) => (
+            <span key={t} className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: TYPE_COLOR[t] }} />
+              {TYPE_LABEL[t]}
+            </span>
+          ))}
         </div>
-        {weeks.map(({ ws, segments, hidden }) => {
-          const lanes = Math.max(2, ...segments.map((s) => s.lane + 1))
-          return (
-            <div
-              key={ws}
-              className="grid grid-cols-7 border-b line last:border-b-0 relative"
-              style={{ gridTemplateRows: `20px repeat(${lanes}, 19px) 4px` }}
-            >
-              {Array.from({ length: 7 }, (_, c) => {
-                const day = addDays(ws, c)
-                const inMonth = day.slice(0, 7) === monthKey(y, m)
-                return (
-                  <div
-                    key={day}
-                    className={'border-r line last:border-r-0 ' + (inMonth ? '' : 'opacity-40')}
-                    style={{ gridColumn: c + 1, gridRow: '1 / -1' }}
-                  >
-                    <div className="flex items-center justify-between px-1 h-5 text-[11px]">
-                      <span
-                        className={day === today ? 'bg-[var(--color-signal)] text-white rounded-full w-5 h-5 grid place-items-center font-bold' : 'font-medium'}
-                      >
-                        {Number(day.slice(8))}
-                      </span>
-                      {hidden[c] > 0 && <span className="muted">+{hidden[c]}</span>}
+        <div className="card overflow-hidden">
+          <div className="grid grid-cols-7 border-b line">
+            {WEEKDAYS.map((d, i) => <div key={d} className={'px-1.5 py-1.5 text-[11px] font-semibold uppercase tracking-wide muted ' + (i >= 5 ? 'bg-[var(--fill)]' : '')}>{d}</div>)}
+          </div>
+          {weeks.map(({ ws, segments, hidden }) => {
+            const lanes = Math.max(2, ...segments.map((s) => s.lane + 1))
+            return (
+              <div
+                key={ws}
+                className="grid grid-cols-7 border-b line last:border-b-0 relative"
+                style={{ gridTemplateRows: `24px repeat(${lanes}, 20px) 5px` }}
+              >
+                {Array.from({ length: 7 }, (_, c) => {
+                  const day = addDays(ws, c)
+                  const inMonth = day.slice(0, 7) === monthKey(y, m)
+                  return (
+                    <div
+                      key={day}
+                      className={'border-r line last:border-r-0 ' + (c >= 5 ? 'bg-[var(--fill)] ' : '') + (inMonth ? '' : 'opacity-40')}
+                      style={{ gridColumn: c + 1, gridRow: '1 / -1' }}
+                    >
+                      <div className="flex items-center justify-between px-1 pt-1 h-6 text-xs">
+                        <span
+                          className={day === today ? 'bg-[var(--color-signal)] text-[var(--on-accent,#fff)] rounded-full w-5 h-5 grid place-items-center font-bold text-[11px]' : 'font-medium num pl-0.5'}
+                        >
+                          {Number(day.slice(8))}
+                        </span>
+                        {hidden[c] > 0 && <span className="muted text-[10px]">+{hidden[c]}</span>}
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-              {segments.map((s) => (
-                <Link
-                  key={s.ev.id + ws}
-                  to="/event/$id"
-                  params={{ id: s.ev.id }}
-                  title={s.ev.title}
-                  className={
-                    'z-10 mx-px my-[1px] px-1 text-[10px] sm:text-[11px] leading-[17px] font-semibold truncate ' +
-                    (s.contLeft ? 'rounded-l-none ' : 'rounded-l ') + (s.contRight ? 'rounded-r-none ' : 'rounded-r ') +
-                    (s.ev.status === 'cancelled' ? 'line-through opacity-50 ' : '')
-                  }
-                  style={{
-                    gridColumn: `${s.col + 1} / span ${s.span}`,
-                    gridRow: s.lane + 2,
-                    background: TYPE_COLOR[s.ev.event_type],
-                    color: TYPE_TEXT[s.ev.event_type],
-                  }}
-                >
-                  {s.ev.title}
-                </Link>
-              ))}
-            </div>
-          )
-        })}
+                  )
+                })}
+                {segments.map((s) => (
+                  <Link
+                    key={s.ev.id + ws}
+                    to="/event/$id"
+                    params={{ id: s.ev.id }}
+                    title={s.ev.title}
+                    className={
+                      'z-10 my-[1px] px-1.5 text-[10.5px] sm:text-[11px] leading-[18px] font-semibold truncate ' +
+                      (s.contLeft ? 'rounded-l-none ' : 'ml-[2px] rounded-l-[5px] ') + (s.contRight ? 'rounded-r-none ' : 'mr-[2px] rounded-r-[5px] ') +
+                      (s.ev.status === 'cancelled' ? 'line-through opacity-50 ' : '')
+                    }
+                    style={{
+                      gridColumn: `${s.col + 1} / span ${s.span}`,
+                      gridRow: s.lane + 2,
+                      background: TYPE_COLOR[s.ev.event_type],
+                      color: TYPE_TEXT[s.ev.event_type],
+                      textShadow: 'none',
+                    }}
+                  >
+                    {s.ev.title}
+                  </Link>
+                ))}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
-      <h2 className="display text-xl font-bold mt-4">Štatistiky mesiaca</h2>
-      <div className="grid grid-cols-4 gap-1.5 mt-2">
-        <Stat label="Eventy spolu" value={cur.count} prev={last.count} />
-        <Stat label="Obsadené dni" value={cur.busy} prev={last.busy} />
-        <Stat label="Voľné dni" value={cur.free} prev={last.free} />
-        {TYPES.map((t) => (
-          <Stat key={t} label={TYPE_LABEL[t]} value={cur.byType[t]} prev={last.byType[t]} color={TYPE_COLOR[t]} />
-        ))}
-      </div>
-      <p className="text-xs muted mt-1">Číslo vedľa = rozdiel oproti mesiacu {monthName(prev.m)}. Zrušené eventy sa nerátajú.</p>
+      <Section title="Mesiac v číslach" sub={`Rozdiel oproti mesiacu ${monthName(prev.m)}. Zrušené eventy sa nerátajú.`}>
+        <div className="grid grid-cols-3 gap-3">
+          <Stat label="Eventy" value={cur.count} sub={diff(cur.count, last.count)} />
+          <Stat label="Obsadené dni" value={cur.busy} sub={diff(cur.busy, last.busy)} />
+          <Stat label="Voľné dni" value={cur.free} sub={diff(cur.free, last.free)} />
+        </div>
+        <ul className="grid grid-cols-2 gap-x-6 mt-4 pt-3 border-t line text-sm">
+          {TYPES.map((t) => (
+            <li key={t} className="flex items-center gap-2 py-1">
+              <span className="w-2.5 h-2.5 rounded-[3px] shrink-0" style={{ background: TYPE_COLOR[t] }} />
+              <span className="flex-1 truncate">{TYPE_LABEL[t]}</span>
+              <b className="num">{cur.byType[t]}</b>
+              <span className="text-xs muted num w-7 text-right">{signed(cur.byType[t] - last.byType[t])}</span>
+            </li>
+          ))}
+        </ul>
+      </Section>
 
-      {isAdmin && <FinanceSummary month={monthKey(y, m)} />}
+      {isAdmin && <FinanceSummary month={monthKey(y, m)} label={monthName(m)} />}
 
-      <SyncBox isAdmin={isAdmin} onSynced={() => setReload((r) => r + 1)} />
-    </section>
-  )
-}
-
-function Stat({ label, value, prev, color }: { label: string; value: number; prev: number; color?: string }) {
-  const diff = value - prev
-  return (
-    <div className="card px-2 py-1.5 min-w-0" style={color ? { borderTop: `3px solid ${color}` } : undefined}>
-      <p className="text-[10px] muted leading-tight truncate">{label}</p>
-      <p className="flex items-baseline gap-1">
-        <span className="display text-2xl font-bold leading-tight">{value}</span>
-        <span className="text-[10px] muted">{diff === 0 ? '=' : diff > 0 ? `+${diff}` : diff}</span>
-      </p>
+      <SyncBox compact isAdmin={isAdmin} onSynced={() => setReload((r) => r + 1)} />
     </div>
   )
 }
 
+const signed = (n: number) => (n === 0 ? '=' : n > 0 ? `+${n}` : String(n))
+const diff = (a: number, b: number) => (a === b ? 'rovnako' : `${signed(a - b)} oproti min.`)
+
 // Mesačný prehľad financií (len admin).
-function FinanceSummary({ month }: { month: string }) {
+function FinanceSummary({ month, label }: { month: string; label: string }) {
   const [sum, setSum] = useState<ReturnType<typeof summarize> | null>(null)
   useEffect(() => {
     const [from, to] = monthRange(month)
@@ -263,13 +266,15 @@ function FinanceSummary({ month }: { month: string }) {
   }, [month])
   if (!sum) return null
   return (
-    <>
-      <h2 className="display text-2xl font-bold mt-6">Financie mesiaca</h2>
-      <Link to="/financie" className="grid grid-cols-3 gap-2 mt-2">
-        <div className="card p-3"><p className="text-[11px] muted">Vedľajšie náklady</p><p className="display text-xl font-bold">{eur(sum.exp)}</p></div>
-        <div className="card p-3"><p className="text-[11px] muted">Brigádnici + 15 %</p><p className="display text-xl font-bold">{eur(sum.pay)}</p></div>
-        <div className="card p-3 border-2 border-[var(--color-signal)]"><p className="text-[11px] muted">Pošle Red Bull</p><p className="display text-xl font-bold">{eur(sum.total)}</p></div>
+    <Section
+      title={<span>Financie <span className="muted font-normal">· {label}</span></span>}
+      action={<Link to="/financie" className="btn btn-sm btn-quiet">Detail<ChevronRight aria-hidden /></Link>}
+    >
+      <Link to="/financie" className="grid grid-cols-3 gap-3">
+        <Stat label="Vedľajšie náklady" value={<span className="text-lg sm:text-2xl">{eur(sum.exp)}</span>} />
+        <Stat label="Brigádnici + 15 %" value={<span className="text-lg sm:text-2xl">{eur(sum.pay)}</span>} />
+        <Stat label="Pošle Red Bull" value={<span className="text-lg sm:text-2xl text-[var(--color-signal)]">{eur(sum.total)}</span>} />
       </Link>
-    </>
+    </Section>
   )
 }

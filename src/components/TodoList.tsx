@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Bell, CalendarDays, Car, Check, Plus, Trash2, Wrench } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Empty, ErrorText, Field, Seg } from './ui'
 import {
   type Todo, type TodoScope, type TodoStatus, type VehicleOpt,
   SCOPE_LABEL, STATUS_LABEL, TODO_COLUMNS, fromLocalInput, toLocalInput,
@@ -69,53 +71,57 @@ export function TodoList({ vehicles, isAdmin, scope, vehicleId, onChanged }: Pro
   const counts = { open: todos.filter((t) => t.status !== 'done').length, done: todos.filter((t) => t.status === 'done').length }
 
   return (
-    <div className="grid gap-3 min-w-0">
+    <div className="grid gap-4 min-w-0">
       {isAdmin && <QuickAdd vehicles={vehicles} scope={scope} vehicleId={vehicleId} onAdded={refresh} onError={setError} />}
 
-      <div className="flex flex-wrap items-center gap-1">
-        {([['open', `Otvorené ${counts.open}`], ['done', `Hotové ${counts.done}`], ['all', 'Všetko']] as const).map(([f, label]) => (
-          <button key={f} onClick={() => setFilter(f)} className={chip(filter === f)}>{label}</button>
-        ))}
+      <div className="grid gap-2">
+        <Seg
+          options={[['open', `Otvorené ${counts.open}`], ['done', `Hotové ${counts.done}`], ['all', 'Všetko']] as const}
+          value={filter}
+          onChange={setFilter}
+        />
         {!scope && (
-          <span className="flex gap-1 ml-auto">
+          <div className="chips-scroll">
             {(['all', 'general', 'garage', 'vehicle'] as const).map((s) => (
-              <button key={s} onClick={() => setScopeFilter(s)} className={chip(scopeFilter === s)}>{s === 'all' ? 'Všetky' : SCOPE_LABEL[s]}</button>
+              <button key={s} type="button" onClick={() => setScopeFilter(s)} aria-pressed={scopeFilter === s} className="chip">{s === 'all' ? 'Všetky' : SCOPE_LABEL[s]}</button>
             ))}
-          </span>
+          </div>
         )}
       </div>
 
-      {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
+      <ErrorText>{error}</ErrorText>
 
       {groups.length === 0 ? (
-        <p className="muted text-sm">Nič tu nie je.</p>
+        <Empty>Nič tu nie je.</Empty>
       ) : (
         groups.map(([name, list]) => (
           <div key={name}>
-            <h3 className={'text-xs font-semibold uppercase tracking-wider mb-1 ' + (name === 'Po termíne' ? 'text-[var(--color-signal)]' : 'muted')}>{name} · {list.length}</h3>
-            <ul className="card divide-y line">
+            <h3 className={'eyebrow mb-1.5 px-1 ' + (name === 'Po termíne' ? '!text-[var(--danger)]' : '')}>{name} · {list.length}</h3>
+            <ul className="card list overflow-hidden">
               {list.map((t) => (
-                <li key={t.id} className="px-3 py-2">
-                  <div className="flex items-start gap-3">
+                <li key={t.id} className={open === t.id ? 'bg-[var(--fill)]' : ''}>
+                  <div className="flex items-start gap-3 px-3 py-2.5">
                     <button
                       disabled={!isAdmin}
                       onClick={() => setStatus(t, t.status === 'done' ? 'open' : 'done')}
-                      className={'mt-0.5 w-6 h-6 shrink-0 rounded-full border-2 grid place-items-center text-xs ' + (t.status === 'done' ? 'bg-green-700 border-green-700 text-white' : t.status === 'in_progress' ? 'border-[var(--color-amber)] text-[var(--color-amber)]' : 'border-[var(--muted)]')}
+                      className={'mt-px w-6 h-6 shrink-0 rounded-full border-2 grid place-items-center ' + (t.status === 'done' ? 'bg-[var(--ok)] border-[var(--ok)] text-[var(--bg)]' : t.status === 'in_progress' ? 'border-[var(--warn)]' : 'border-[var(--muted)] opacity-70')}
                       aria-label={t.status === 'done' ? 'Znovu otvoriť' : 'Hotovo'}
                     >
-                      {t.status === 'done' ? '✓' : t.status === 'in_progress' ? '◐' : ''}
+                      {t.status === 'done' ? <Check className="w-3.5 h-3.5" strokeWidth={3} aria-hidden /> : t.status === 'in_progress' ? <span className="w-2.5 h-2.5 rounded-full bg-[var(--warn)]" /> : null}
                     </button>
                     <button onClick={() => setOpen(open === t.id ? null : t.id)} className="flex-1 min-w-0 text-left">
-                      <span className={'block text-sm leading-snug ' + (t.status === 'done' ? 'line-through muted' : '') + (open === t.id ? '' : ' line-clamp-2')}>{t.text}</span>
-                      <span className="flex flex-wrap gap-x-2 text-[11px] muted mt-0.5">
-                        {t.scope === 'vehicle' && <span>🚐 {vName(t.vehicle_id) ?? 'auto'}</span>}
-                        {t.scope === 'garage' && <span>🔧 Garáž</span>}
-                        {t.due_date && <span className={t.status !== 'done' && t.due_date < today ? 'text-[var(--color-signal)] font-semibold' : ''}>📅 {fmtDay(t.due_date)}</span>}
-                        {t.remind_at && t.status !== 'done' && <span>🔔 {new Date(t.remind_at).toLocaleString('sk-SK', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
-                      </span>
+                      <span className={'block leading-snug ' + (t.status === 'done' ? 'line-through muted' : '') + (open === t.id ? '' : ' line-clamp-2')}>{t.text}</span>
+                      {(t.scope !== 'general' || t.due_date || (t.remind_at && t.status !== 'done')) && (
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs muted mt-1">
+                          {t.scope === 'vehicle' && <span className="inline-flex items-center gap-1"><Car className="w-3.5 h-3.5" aria-hidden />{vName(t.vehicle_id) ?? 'auto'}</span>}
+                          {t.scope === 'garage' && <span className="inline-flex items-center gap-1"><Wrench className="w-3.5 h-3.5" aria-hidden />Garáž</span>}
+                          {t.due_date && <span className={'inline-flex items-center gap-1 ' + (t.status !== 'done' && t.due_date < today ? 'text-[var(--danger)] font-semibold' : '')}><CalendarDays className="w-3.5 h-3.5" aria-hidden />{fmtDay(t.due_date)}</span>}
+                          {t.remind_at && t.status !== 'done' && <span className="inline-flex items-center gap-1"><Bell className="w-3.5 h-3.5" aria-hidden />{new Date(t.remind_at).toLocaleString('sk-SK', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
+                        </span>
+                      )}
                     </button>
                   </div>
-                  {open === t.id && isAdmin && <Edit t={t} vehicles={vehicles} fixed={!!scope} onClose={() => setOpen(null)} onSaved={() => { setOpen(null); refresh() }} onError={setError} />}
+                  {open === t.id && isAdmin && <div className="px-3 pb-3"><Edit t={t} vehicles={vehicles} fixed={!!scope} onClose={() => setOpen(null)} onSaved={() => { setOpen(null); refresh() }} onError={setError} /></div>}
                 </li>
               ))}
             </ul>
@@ -125,9 +131,6 @@ export function TodoList({ vehicles, isAdmin, scope, vehicleId, onChanged }: Pro
     </div>
   )
 }
-
-const chip = (on: boolean) =>
-  'h-8 px-3 rounded-lg border line text-xs font-medium ' + (on ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')
 
 function QuickAdd({ vehicles, scope, vehicleId, onAdded, onError }: {
   vehicles: VehicleOpt[]; scope?: TodoScope; vehicleId?: string; onAdded: () => void; onError: (m: string) => void
@@ -149,26 +152,23 @@ function QuickAdd({ vehicles, scope, vehicleId, onAdded, onError }: {
     onAdded()
   }
 
-  const sel = 'h-10 px-2 rounded-lg border line bg-transparent text-sm'
   return (
-    <div className="card p-2 grid gap-2">
+    <div className="grid gap-2">
       <div className="flex gap-2">
         <input
-          className="flex-1 min-w-0 h-10 px-3 rounded-lg border line bg-transparent"
+          className="input"
           placeholder="Nová úloha…"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && add()}
         />
-        <button onClick={add} disabled={busy || !text.trim()} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-50">Pridať</button>
+        <button onClick={add} disabled={busy || !text.trim()} className="btn btn-primary btn-icon shrink-0" aria-label="Pridať úlohu"><Plus aria-hidden /></button>
       </div>
-      {!scope && (
+      {!scope && text.trim() !== '' && (
         <div className="flex gap-2">
-          <select className={sel} value={sc} onChange={(e) => setSc(e.target.value as TodoScope)}>
-            {(['general', 'garage', 'vehicle'] as const).map((s) => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}
-          </select>
+          <Seg className="flex-1" options={(['general', 'garage', 'vehicle'] as const).map((s) => [s, SCOPE_LABEL[s]] as const)} value={sc} onChange={setSc} />
           {sc === 'vehicle' && (
-            <select className={sel + ' flex-1'} value={veh} onChange={(e) => setVeh(e.target.value)}>
+            <select className="input !w-32 !h-10" value={veh} onChange={(e) => setVeh(e.target.value)}>
               <option value="">— auto —</option>
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
@@ -186,7 +186,6 @@ function Edit({ t, vehicles, fixed, onClose, onSaved, onError }: {
     text: t.text, status: t.status, scope: t.scope, vehicle_id: t.vehicle_id ?? '',
     due_date: t.due_date ?? '', remind: toLocalInput(t.remind_at),
   })
-  const input = 'w-full h-10 px-3 rounded-lg border line bg-transparent text-sm'
 
   async function save() {
     if (!f.text.trim()) return onError('Zadaj text.')
@@ -208,36 +207,30 @@ function Edit({ t, vehicles, fixed, onClose, onSaved, onError }: {
   }
 
   return (
-    <div className="mt-3 grid gap-2 border-t line pt-3">
-      <textarea rows={3} className={input + ' h-auto py-2'} value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} />
-      <div className="flex gap-1">
-        {(['open', 'in_progress', 'done'] as const).map((s) => (
-          <button key={s} type="button" onClick={() => setF({ ...f, status: s })} className={chip(f.status === s) + ' flex-1'}>{STATUS_LABEL[s]}</button>
-        ))}
-      </div>
+    <div className="form pt-1">
+      <textarea rows={3} className="input" value={f.text} onChange={(e) => setF({ ...f, text: e.target.value })} />
+      <Seg options={(['open', 'in_progress', 'done'] as const).map((s) => [s, STATUS_LABEL[s]] as const)} value={f.status} onChange={(s) => setF({ ...f, status: s })} />
       {!fixed && (
         <div className="flex gap-2">
-          <select className={input} value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value as TodoScope })}>
+          <select className="input" value={f.scope} onChange={(e) => setF({ ...f, scope: e.target.value as TodoScope })}>
             {(['general', 'garage', 'vehicle'] as const).map((s) => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}
           </select>
           {f.scope === 'vehicle' && (
-            <select className={input} value={f.vehicle_id} onChange={(e) => setF({ ...f, vehicle_id: e.target.value })}>
+            <select className="input" value={f.vehicle_id} onChange={(e) => setF({ ...f, vehicle_id: e.target.value })}>
               <option value="">— auto —</option>
               {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
           )}
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
-        <label className="grid gap-1 text-xs"><span className="muted">Termín</span>
-          <input type="date" className={input} value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} /></label>
-        <label className="grid gap-1 text-xs"><span className="muted">Pripomienka 🔔</span>
-          <input type="datetime-local" className={input} value={f.remind} onChange={(e) => setF({ ...f, remind: e.target.value })} /></label>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Termín"><input type="date" className="input" value={f.due_date} onChange={(e) => setF({ ...f, due_date: e.target.value })} /></Field>
+        <Field label="Pripomienka"><input type="datetime-local" className="input" value={f.remind} onChange={(e) => setF({ ...f, remind: e.target.value })} /></Field>
       </div>
-      <div className="flex gap-2">
-        <button onClick={save} className="h-10 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>
-        <button onClick={onClose} className="h-10 px-4 rounded-lg border line text-sm">Zavrieť</button>
-        <button onClick={remove} className="h-10 px-3 ml-auto text-sm text-[var(--color-signal)]">Zmazať</button>
+      <div className="form-actions">
+        <button onClick={save} className="btn btn-primary">Uložiť</button>
+        <button onClick={onClose} className="btn btn-quiet">Zavrieť</button>
+        <button onClick={remove} className="btn btn-danger ml-auto"><Trash2 aria-hidden />Zmazať</button>
       </div>
     </div>
   )

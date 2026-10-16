@@ -3,7 +3,7 @@ export function BusyOverlay({ title, progress }: { title: string; progress: numb
   return (
     <div className="fixed inset-0 z-[60] bg-black/70 grid place-items-center p-6" role="alert" aria-busy="true">
       <div className="card p-5 w-full max-w-sm text-center">
-        <p className="display text-2xl font-bold">{title}</p>
+        <p className="section-title !text-xl">{title}</p>
         <div className="h-3 rounded-full bg-[var(--line)] mt-4 overflow-hidden">
           {progress === null ? (
             <div className="h-3 w-1/3 rounded-full bg-[var(--color-signal)] animate-pulse" style={{ animation: 'busy-slide 1.1s ease-in-out infinite' }} />

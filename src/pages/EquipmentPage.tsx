@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronDown, Pencil, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { Badge, Chips, Empty, ErrorText, Field, PageHeader, Section } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { Photo, PhotoUpload } from '../components/Photo'
@@ -62,48 +64,42 @@ export function EquipmentPage() {
   const refresh = () => setReload((r) => r + 1)
 
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <div className="flex items-end gap-2">
-        <h1 className="display text-4xl font-bold flex-1">Technika</h1>
-        {isAdmin && !adding && (
-          <button onClick={() => setAdding(true)} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)]">+ Nová</button>
-        )}
-      </div>
-      {error && <p className="text-[var(--color-signal)]">{error}</p>}
+    <div className="page">
+      <PageHeader
+        title="Technika"
+        sub={`${items.filter((e) => e.active).length} položiek${issues ? ` · ${issues} mimo skladu alebo pokazené` : ''}`}
+        actions={isAdmin && !adding && <button onClick={() => setAdding(true)} className="btn btn-sm btn-primary"><Plus aria-hidden />Nová</button>}
+      />
+      <ErrorText>{error}</ErrorText>
       {adding && (
-        <div className="card p-4">
-          <h2 className="display text-xl font-bold mb-2">Nová technika</h2>
+        <Section title="Nová technika">
           <ItemForm onDone={(saved) => { setAdding(false); if (saved) refresh() }} />
-        </div>
+        </Section>
       )}
 
-      <div className="flex flex-wrap gap-1">
+      <div className="chips-scroll">
         {(['all', ...EQ_GROUPS] as const).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCat(c)}
-            className={'h-9 px-3 rounded-lg border line text-sm ' + (cat === c ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-          >
-            {c === 'all' ? 'Všetko' : c}
-          </button>
+          <button key={c} type="button" onClick={() => setCat(c)} aria-pressed={cat === c} className="chip">{c === 'all' ? 'Všetko' : c}</button>
         ))}
-        <label className="flex items-center gap-1 ml-auto text-sm muted">
-          <input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} />
-          Mimo skladu / pokazené ({issues})
-        </label>
+        <button type="button" onClick={() => setOnlyIssues(!onlyIssues)} aria-pressed={onlyIssues} className="chip">
+          <TriangleAlert className="w-4 h-4" aria-hidden />Problémy<span className="count">{issues}</span>
+        </button>
       </div>
 
-      <ul className="grid sm:grid-cols-2 gap-2">
-        {shown.map((e) => (
-          <li key={e.id} className={'card p-3 ' + (e.active ? '' : 'opacity-50')}>
-            <ItemCard e={e} usage={usage.get(e.id)} isAdmin={isAdmin} open={open === e.id} onToggle={() => setOpen(open === e.id ? null : e.id)} onSaved={() => { setOpen(null); refresh() }} />
-          </li>
-        ))}
-      </ul>
-      {shown.length === 0 && <p className="muted">Nič tu nie je.</p>}
+      {shown.length === 0 ? (
+        <Empty>Nič tu nie je.</Empty>
+      ) : (
+        <ul className="card list overflow-hidden">
+          {shown.map((e) => (
+            <li key={e.id} className={e.active ? '' : 'opacity-50'}>
+              <ItemCard e={e} usage={usage.get(e.id)} isAdmin={isAdmin} open={open === e.id} onToggle={() => setOpen(open === e.id ? null : e.id)} onSaved={() => { setOpen(null); refresh() }} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {isAdmin && <SetsAdmin items={items.filter((e) => e.active)} />}
-    </section>
+    </div>
   )
 }
 
@@ -116,45 +112,46 @@ function ItemCard({ e, usage, isAdmin, open, onToggle, onSaved }: {
   const lent = e.held_by && (NEEDS_HOLDER.includes(e.status) || e.qty_borrowed > 0)
   const cat = splitName(e.name)[1] ?? CATEGORY_LABEL[e.category]
   return (
-    <>
-      <div className="relative overflow-hidden rounded-md">
+    <div className={open ? 'bg-[var(--fill)]' : ''}>
+      <div className="flex gap-3 px-4 py-3">
         <Photo
           kind="equipment-photos"
           path={e.photo_path}
           alt={e.name}
-          className="absolute right-0 top-0 h-full w-[48%] object-contain object-right pointer-events-none"
-          fallback={null}
+          className="w-14 h-14 rounded-[var(--ctl-r)] object-contain bg-[var(--fill)] shrink-0"
+          fallback={<span className="w-14 h-14 rounded-[var(--ctl-r)] bg-[var(--fill)] grid place-items-center text-2xl shrink-0">{eqIcon(e)}</span>}
         />
-        <button onClick={isAdmin ? onToggle : undefined} className="relative w-full text-left grid gap-1.5 min-h-[88px]">
-          <span className="block pr-[46%]">
-            <span className="block font-semibold text-lg leading-tight">{name}</span>
-            <span className="block text-[11px] uppercase tracking-wider muted">{cat}</span>
+        <button onClick={isAdmin ? onToggle : undefined} className={'flex-1 min-w-0 text-left grid gap-1.5 ' + (isAdmin ? '' : 'cursor-default')}>
+          <span className="flex items-start gap-2">
+            <span className="flex-1 min-w-0">
+              <span className="block font-semibold leading-tight">{name}</span>
+              <span className="block text-xs muted mt-0.5">{cat}{e.notes ? ` · ${e.notes}` : ''}</span>
+            </span>
+            {isAdmin && <ChevronDown className={'w-5 h-5 muted shrink-0 transition-transform ' + (open ? 'rotate-180' : '')} aria-hidden />}
           </span>
-          <span className="flex flex-wrap gap-1 text-xs">
-            {c.free > 0 && <Badge color="#2e8b57">{c.free} voľné</Badge>}
-            {c.borrowed > 0 && <Badge color="#b7791f">{c.borrowed} požičané</Badge>}
-            {c.broken > 0 && <Badge color={STATUS_COLOR.broken}>{c.broken} pokazené</Badge>}
-            {c.lost > 0 && <Badge color={STATUS_COLOR.lost}>{c.lost} stratené</Badge>}
+          <span className="flex flex-wrap gap-1">
+            {c.free > 0 && <Badge tone="ok">{c.free} voľné</Badge>}
+            {c.borrowed > 0 && <Badge tone="warn">{c.borrowed} požičané</Badge>}
+            {c.broken > 0 && <Badge tone="danger">{c.broken} pokazené</Badge>}
+            {c.lost > 0 && <Badge>{c.lost} stratené</Badge>}
           </span>
           {lent && (
-            <span className="block rounded-lg border px-3 py-2 text-sm" style={{ background: 'color-mix(in srgb, var(--color-sun) 28%, transparent)', borderColor: 'var(--color-sun)' }}>
+            <span className="block rounded-[var(--ctl-r)] px-3 py-2 text-sm bg-[color-mix(in_srgb,var(--warn)_12%,transparent)]">
               <b className="block">Požičané: {e.held_by}</b>
-              {e.status_note && <span className="block text-xs">{e.status_note}</span>}
+              {e.status_note && <span className="block text-xs muted">{e.status_note}</span>}
             </span>
           )}
-          {!lent && e.held_by && <span className="block text-sm pr-[46%]">U: {e.held_by}</span>}
-          {!lent && e.status_note && <span className="block text-xs pr-[46%]">{e.status_note}</span>}
-          {e.notes && <span className="block text-xs muted pr-[46%]">{e.notes}</span>}
-          <span className="block text-[11px] muted">
+          {!lent && e.held_by && <span className="block text-sm">U: {e.held_by}</span>}
+          {!lent && e.status_note && <span className="block text-xs">{e.status_note}</span>}
+          <span className="block text-xs muted">
             {usage ? `${usage.events}× na evente · ${usage.days} dní` : 'Ešte nebola na evente'}
-            {usage?.last && <> · <Link to="/event/$id" params={{ id: usage.last.id }} className="text-[var(--color-sky)]" onClick={(ev) => ev.stopPropagation()}>{fmtRange(usage.last)}</Link></>}
+            {usage?.last && <> · <Link to="/event/$id" params={{ id: usage.last.id }} className="link font-medium" onClick={(ev) => ev.stopPropagation()}>{fmtRange(usage.last)}</Link></>}
           </span>
-          {isAdmin && <span className="block text-xs font-semibold muted">✎ Upraviť</span>}
         </button>
       </div>
-      {open && !editAll && <QuickStatus e={e} onSaved={onSaved} onEditAll={() => setEditAll(true)} />}
-      {open && editAll && <div className="mt-3 border-t line pt-3"><ItemForm item={e} onDone={(saved) => { setEditAll(false); if (saved) onSaved() }} /></div>}
-    </>
+      {open && !editAll && <div className="px-4 pb-4"><QuickStatus e={e} onSaved={onSaved} onEditAll={() => setEditAll(true)} /></div>}
+      {open && editAll && <div className="px-4 pb-4 pt-1"><ItemForm item={e} onDone={(saved) => { setEditAll(false); if (saved) onSaved() }} /></div>}
+    </div>
   )
 }
 
@@ -182,38 +179,26 @@ function QuickStatus({ e, onSaved, onEditAll }: { e: Equipment; onSaved: () => v
     else onSaved()
   }
 
-  const input = 'w-full h-10 px-3 rounded-lg border line bg-transparent'
   return (
-    <div className="mt-3 border-t line pt-3 grid gap-3">
-      <div className="flex flex-wrap gap-1">
-        {QUICK_STATUSES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStatus(s)}
-            className="h-9 px-3 rounded-lg border-2 text-sm font-semibold"
-            style={status === s ? { background: STATUS_COLOR[s], borderColor: STATUS_COLOR[s], color: '#fff' } : { borderColor: 'var(--line)' }}
-          >
-            {STATUS_LABEL[s]}
-          </button>
-        ))}
+    <div className="form pt-1">
+      <div className="field">
+        <span className="field-label">Stav</span>
+        <Chips options={QUICK_STATUSES.map((s) => [s, STATUS_LABEL[s]] as const)} isOn={(s) => status === s} onPick={setStatus} />
       </div>
       {multi && (
-        <div className="grid grid-cols-2 gap-2">
-          <label className="grid gap-1 text-sm"><span className="muted">Pokazené ks (z {e.quantity})</span>
-            <input type="number" inputMode="numeric" min={0} max={e.quantity} className={input} value={broken} onChange={(ev) => setBroken(ev.target.value)} /></label>
-          <label className="grid gap-1 text-sm"><span className="muted">Požičané ks</span>
-            <input type="number" inputMode="numeric" min={0} max={e.quantity} className={input} value={borrowed} onChange={(ev) => setBorrowed(ev.target.value)} /></label>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={`Pokazené ks (z ${e.quantity})`}>
+            <input type="number" inputMode="numeric" min={0} max={e.quantity} className="input" value={broken} onChange={(ev) => setBroken(ev.target.value)} /></Field>
+          <Field label="Požičané ks">
+            <input type="number" inputMode="numeric" min={0} max={e.quantity} className="input" value={borrowed} onChange={(ev) => setBorrowed(ev.target.value)} /></Field>
         </div>
       )}
-      <label className="grid gap-1 text-sm"><span className="muted">Komu / kde je</span>
-        <input className={input} value={holder} onChange={(ev) => setHolder(ev.target.value)} /></label>
-      <label className="grid gap-1 text-sm"><span className="muted">Poznámka k stavu</span>
-        <input className={input} value={note} onChange={(ev) => setNote(ev.target.value)} /></label>
-      {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-      <div className="flex gap-2">
-        <button onClick={save} className="h-10 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>
-        <button onClick={onEditAll} className="h-10 px-4 rounded-lg border line text-sm ml-auto">Upraviť položku</button>
+      <Field label="Komu / kde je"><input className="input" value={holder} onChange={(ev) => setHolder(ev.target.value)} /></Field>
+      <Field label="Poznámka k stavu"><input className="input" value={note} onChange={(ev) => setNote(ev.target.value)} /></Field>
+      <ErrorText>{error}</ErrorText>
+      <div className="form-actions">
+        <button onClick={save} className="btn btn-primary">Uložiť</button>
+        <button onClick={onEditAll} className="btn btn-quiet ml-auto"><Pencil aria-hidden />Upraviť položku</button>
       </div>
     </div>
   )
@@ -246,24 +231,21 @@ function ItemForm({ item, onDone }: { item?: Equipment; onDone: (saved: boolean)
     else onDone(true)
   }
 
-  const input = 'w-full h-10 px-3 rounded-lg border line bg-transparent'
   return (
-    <div className="grid gap-3">
-      <label className="grid gap-1 text-sm"><span className="muted">Názov</span>
-        <input className={input} value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="napr. Cooler: Small" /></label>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="grid gap-1 text-sm"><span className="muted">Kategória</span>
-          <select className={input} value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as EqCategory })}>
+    <div className="form">
+      <Field label="Názov"><input className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="napr. Cooler: Small" /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Kategória">
+          <select className="input" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value as EqCategory })}>
             {CATEGORIES.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-          </select></label>
-        <label className="grid gap-1 text-sm"><span className="muted">Počet kusov</span>
-          <input type="number" inputMode="numeric" min={0} className={input} value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></label>
+          </select></Field>
+        <Field label="Počet kusov">
+          <input type="number" inputMode="numeric" min={0} className="input" value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></Field>
       </div>
-      <label className="grid gap-1 text-sm"><span className="muted">Poznámka (model, rozmer…)</span>
-        <input className={input} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></label>
+      <Field label="Poznámka (model, rozmer…)"><input className="input" value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
       {item && (
         <div className="flex items-center gap-3">
-          <Photo kind="equipment-photos" path={photo} alt="" className="w-16 h-16 rounded-lg object-cover border line" fallback={<span className="w-16 h-16 rounded-lg border line grid place-items-center text-3xl">{eqIcon(item)}</span>} />
+          <Photo kind="equipment-photos" path={photo} alt="" className="w-16 h-16 rounded-[var(--ctl-r)] object-cover border" fallback={<span className="w-16 h-16 rounded-[var(--ctl-r)] bg-[var(--fill)] grid place-items-center text-3xl">{eqIcon(item)}</span>} />
           <PhotoUpload
             kind="equipment-photos"
             id={item.id}
@@ -277,15 +259,15 @@ function ItemForm({ item, onDone }: { item?: Equipment; onDone: (saved: boolean)
         </div>
       )}
       {item && (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="check">
           <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
           Aktívna (keď už technika nie je, odškrtni – história ostane)
         </label>
       )}
-      {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-      <div className="flex gap-2">
-        <button onClick={save} className="h-10 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>
-        <button onClick={() => onDone(false)} className="h-10 px-4 rounded-lg border line">Zrušiť</button>
+      <ErrorText>{error}</ErrorText>
+      <div className="form-actions">
+        <button onClick={save} className="btn btn-primary">Uložiť</button>
+        <button onClick={() => onDone(false)} className="btn btn-quiet">Zrušiť</button>
       </div>
     </div>
   )
@@ -345,45 +327,48 @@ function SetsAdmin({ items }: { items: Equipment[] }) {
     setReload((r) => r + 1)
   }
 
-  const input = 'w-full h-10 px-3 rounded-lg border line bg-transparent'
   return (
-    <div className="card p-4 min-w-0">
-      <h2 className="display text-xl font-bold">Sady techniky</h2>
-      <p className="text-xs muted mb-2">Keď na evente vyberieš auto, jeho sada sa pridá automaticky.</p>
-      <ul className="grid gap-2">
+    <Section
+      title="Sady techniky"
+      sub="Keď na evente vyberieš auto, jeho sada sa pridá automaticky."
+      action={!edit && <button onClick={() => setEdit({ name: '', vehicle_id: '', qty: {} })} className="btn btn-sm"><Plus aria-hidden />Nová</button>}
+    >
+      <ul className="list">
         {sets.map((s) => (
           <li key={s.id}>
             <button
               onClick={() => setEdit({ id: s.id, name: s.name, vehicle_id: s.vehicle_id ?? '', qty: Object.fromEntries(s.equipment_set_items.map((i) => [i.equipment_id, String(i.quantity)])) })}
-              className="w-full text-left text-sm"
+              className="w-full text-left text-sm py-2.5 flex items-center gap-3"
             >
-              <span className="font-semibold">{s.name}</span>
-              <span className="muted"> · {vehicles.find((v) => v.id === s.vehicle_id)?.name ?? 'bez auta'}</span>
-              <span className="block muted text-xs">{s.equipment_set_items.map((i) => `${i.quantity}× ${eqName(i.equipment_id)}`).join(', ') || 'prázdna'}</span>
+              <span className="flex-1 min-w-0">
+                <span className="font-semibold">{s.name}</span>
+                <span className="muted"> · {vehicles.find((v) => v.id === s.vehicle_id)?.name ?? 'bez auta'}</span>
+                <span className="block muted text-xs mt-0.5">{s.equipment_set_items.map((i) => `${i.quantity}× ${eqName(i.equipment_id)}`).join(', ') || 'prázdna'}</span>
+              </span>
+              <Pencil className="w-4 h-4 muted shrink-0" aria-hidden />
             </button>
           </li>
         ))}
       </ul>
-      {edit ? (
-        <div className="grid gap-3 mt-4 border-t line pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="grid gap-1 text-sm"><span className="muted">Názov</span>
-              <input className={input} value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
-            <label className="grid gap-1 text-sm"><span className="muted">Auto</span>
-              <select className={input} value={edit.vehicle_id} onChange={(e) => setEdit({ ...edit, vehicle_id: e.target.value })}>
+      {edit && (
+        <div className="form mt-3 border-t pt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Názov"><input className="input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
+            <Field label="Auto">
+              <select className="input" value={edit.vehicle_id} onChange={(e) => setEdit({ ...edit, vehicle_id: e.target.value })}>
                 <option value="">— žiadne —</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-              </select></label>
+              </select></Field>
           </div>
-          <div className="grid gap-1 text-sm">
-            <span className="muted">Technika v sade (počet kusov)</span>
-            <ul className="grid gap-1 max-h-72 overflow-y-auto">
+          <div className="field">
+            <span className="field-label">Technika v sade (počet kusov)</span>
+            <ul className="list max-h-80 overflow-y-auto rounded-[var(--ctl-r)] border px-3">
               {items.map((e) => (
-                <li key={e.id} className="flex items-center gap-2">
+                <li key={e.id} className="flex items-center gap-2 py-1.5 text-sm">
                   <span className="flex-1 truncate">{e.name}</span>
                   <input
                     type="number" inputMode="numeric" min={0} placeholder="0"
-                    className="w-16 h-9 px-2 rounded-md border line bg-transparent text-right"
+                    className="input !w-16 !h-9 text-right"
                     value={edit.qty[e.id] ?? ''}
                     onChange={(ev) => setEdit({ ...edit, qty: { ...edit.qty, [e.id]: ev.target.value } })}
                   />
@@ -391,22 +376,14 @@ function SetsAdmin({ items }: { items: Equipment[] }) {
               ))}
             </ul>
           </div>
-          {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-          <div className="flex gap-2">
-            <button onClick={save} className="h-10 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>
-            <button onClick={() => { setEdit(null); setError(null) }} className="h-10 px-4 rounded-lg border line">Zrušiť</button>
-            {edit.id && <button onClick={() => removeSet(edit.id!)} className="h-10 px-3 ml-auto text-sm text-[var(--color-signal)]">Zmazať</button>}
+          <ErrorText>{error}</ErrorText>
+          <div className="form-actions">
+            <button onClick={save} className="btn btn-primary">Uložiť</button>
+            <button onClick={() => { setEdit(null); setError(null) }} className="btn btn-quiet">Zrušiť</button>
+            {edit.id && <button onClick={() => removeSet(edit.id!)} className="btn btn-danger ml-auto"><Trash2 aria-hidden />Zmazať</button>}
           </div>
         </div>
-      ) : (
-        <button onClick={() => setEdit({ name: '', vehicle_id: '', qty: {} })} className="mt-3 h-10 px-4 rounded-lg border line text-sm">+ Nová sada</button>
       )}
-    </div>
-  )
-}
-
-function Badge({ color, children }: { color: string; children: ReactNode }) {
-  return (
-    <span className="px-1.5 py-0.5 rounded font-semibold text-white" style={{ background: color }}>{children}</span>
+    </Section>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Bell, Check } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { Todo } from '../lib/todos'
 
@@ -38,13 +39,13 @@ export function Reminders() {
   return (
     <div className="grid gap-2 mb-4">
       {due.map((t) => (
-        <div key={t.id} className="rounded-xl p-3 border-2 border-[var(--color-amber)]" style={{ background: 'color-mix(in srgb, var(--color-amber) 14%, var(--card))' }}>
-          <p className="text-sm font-semibold">🔔 {t.text}</p>
-          <div className="flex flex-wrap gap-1 mt-2">
-            <button onClick={() => act(t.id, { status: 'done', remind_at: null })} className="h-9 px-3 rounded-lg font-semibold text-white bg-green-700 text-sm">Hotovo</button>
-            <button onClick={() => act(t.id, { remind_at: later(3600_000) })} className="h-9 px-3 rounded-lg border line text-sm">Za 1 h</button>
-            <button onClick={() => act(t.id, { remind_at: tomorrow() })} className="h-9 px-3 rounded-lg border line text-sm">Zajtra</button>
-            <button onClick={() => act(t.id, { remind_at: null })} className="h-9 px-3 rounded-lg text-sm muted ml-auto">Zrušiť</button>
+        <div key={t.id} className="notice !block">
+          <p className="font-semibold flex items-start gap-2"><Bell className="w-5 h-5 text-[var(--warn)] shrink-0 mt-px" aria-hidden />{t.text}</p>
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
+            <button onClick={() => act(t.id, { status: 'done', remind_at: null })} className="btn btn-sm btn-primary"><Check aria-hidden />Hotovo</button>
+            <button onClick={() => act(t.id, { remind_at: later(3600_000) })} className="btn btn-sm">Za 1 h</button>
+            <button onClick={() => act(t.id, { remind_at: tomorrow() })} className="btn btn-sm">Zajtra</button>
+            <button onClick={() => act(t.id, { remind_at: null })} className="btn btn-sm btn-quiet muted ml-auto">Zrušiť</button>
           </div>
         </div>
       ))}

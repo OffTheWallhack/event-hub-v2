@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { ChevronDown, ChevronRight, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { TYPE_COLOR, addDays, diffDays, fmtDay, fmtRange, startDay, todayLocal, type EventRow } from '../lib/events'
 
@@ -55,58 +56,77 @@ export function DayPanel({ isAdmin }: { isAdmin: boolean }) {
   const attention = open2 + lent.length + notBack.length
 
   const row = (e: Ev) => (
-    <Link key={e.id} to="/event/$id" params={{ id: e.id }} className="flex items-center gap-2 py-1.5">
-      <span className="w-2.5 h-8 rounded-sm shrink-0" style={{ background: TYPE_COLOR[e.event_type] }} />
+    <Link key={e.id} to="/event/$id" params={{ id: e.id }} className="flex items-center gap-3 px-4 py-3 min-w-0">
+      <span className="w-1 self-stretch rounded-full shrink-0" style={{ background: TYPE_COLOR[e.event_type] }} />
       <span className="flex-1 min-w-0">
         <span className="block font-semibold truncate">{e.title}</span>
-        <span className="block text-xs muted">{fmtRange(e)}</span>
+        <span className="block text-sm muted">{fmtRange(e)}</span>
       </span>
+      <ChevronRight className="w-5 h-5 muted shrink-0" aria-hidden />
     </Link>
   )
+  const nextIn = next ? diffDays(today, startDay(next)) : 0
 
   if (now.length === 0 && !next && attention === 0) return null
   return (
-    <div className="grid gap-2 mb-4">
-      {now.length > 0 && (
-        <div className="card p-3">
-          <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--color-signal)]">Dnes</p>
-          <div className="divide-y line">{now.map(row)}</div>
-        </div>
-      )}
-      {next && (
-        <div className="card p-3">
-          <p className="text-[11px] uppercase tracking-wider font-semibold muted">
-            Najbližší event · {diffDays(today, startDay(next)) === 1 ? 'zajtra' : `o ${diffDays(today, startDay(next))} dní`}
-          </p>
-          {row(next)}
+    <div className="grid gap-3">
+      {(now.length > 0 || next) && (
+        <div className="card overflow-hidden list">
+          {now.length > 0 && (
+            <div>
+              <p className="eyebrow px-4 pt-3 !text-[var(--color-signal)]">Dnes</p>
+              <div className="list">{now.map(row)}</div>
+            </div>
+          )}
+          {next && (
+            <div>
+              <p className="eyebrow px-4 pt-3">Najbližší · {nextIn === 1 ? 'zajtra' : `o ${nextIn} dní`}</p>
+              {row(next)}
+            </div>
+          )}
         </div>
       )}
       {isAdmin && attention > 0 && (
-        <details className="card p-3 border-[var(--color-amber)] border-2">
-          <summary className="font-semibold cursor-pointer">⚠ Treba doriešiť ({attention})</summary>
+        <details className="notice group block">
+          <summary className="flex items-center gap-2 font-semibold select-none">
+            <TriangleAlert className="w-5 h-5 text-[var(--warn)] shrink-0" aria-hidden />
+            <span className="flex-1">Treba doriešiť</span>
+            <span className="badge badge-warn">{attention}</span>
+            <ChevronDown className="w-5 h-5 muted transition-transform group-open:rotate-180" aria-hidden />
+          </summary>
           {open.length > 0 && (
-            <div className="mt-2">
-              <p className="text-xs muted">Skončené, ešte neuzavreté (report):</p>
-              <div className="divide-y line text-sm">{open.map(row)}</div>
+            <div className="mt-3">
+              <p className="eyebrow">Skončené, ešte neuzavreté</p>
+              <ul className="list text-sm">
+                {open.map((e) => (
+                  <li key={e.id}>
+                    <Link to="/event/$id" params={{ id: e.id }} className="flex items-center gap-2 py-2">
+                      <span className="dot" style={{ background: TYPE_COLOR[e.event_type] }} />
+                      <span className="flex-1 truncate font-medium">{e.title}</span>
+                      <span className="muted text-xs shrink-0">{fmtDay(startDay(e)).replace(/ \d{4}$/, '')}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
               {open2 > open.length && <p className="text-xs muted mt-1">…a ďalších {open2 - open.length}</p>}
             </div>
           )}
           {(lent.length > 0 || notBack.length > 0) && (
-            <div className="mt-2">
-              <p className="text-xs muted">Technika mimo skladu:</p>
-              <ul className="divide-y line text-sm">
+            <div className="mt-3">
+              <p className="eyebrow">Technika mimo skladu</p>
+              <ul className="list text-sm">
                 {lent.map((l) => (
-                  <li key={l.id} className="py-1.5">
-                    <Link to="/technika" className="font-semibold text-[var(--color-sky)]">{l.name}</Link>
-                    <span className="muted text-xs"> · {LENT_LABEL[l.status] ?? l.status}{l.held_by ? ` · ${l.held_by}` : ''}</span>
-                    {l.borrowed_until && l.borrowed_until < today && <span className="text-xs text-[var(--color-signal)] font-semibold"> · malo byť vrátené {fmtDay(l.borrowed_until)}</span>}
+                  <li key={l.id} className="py-2">
+                    <Link to="/technika" className="font-medium">{l.name}</Link>
+                    <span className="muted"> · {LENT_LABEL[l.status] ?? l.status}{l.held_by ? ` · ${l.held_by}` : ''}</span>
+                    {l.borrowed_until && l.borrowed_until < today && <span className="err font-semibold"> · malo byť vrátené {fmtDay(l.borrowed_until)}</span>}
                   </li>
                 ))}
                 {notBack.map((n, i) => (
-                  <li key={i} className="py-1.5">
-                    <span className="font-semibold">{n.quantity}× {n.equipment?.name}</span>
-                    <span className="muted text-xs"> · nevrátené z </span>
-                    <Link to="/event/$id" params={{ id: n.events.id }} className="text-xs text-[var(--color-sky)]">{n.events.title}</Link>
+                  <li key={i} className="py-2">
+                    <span className="font-medium">{n.quantity}× {n.equipment?.name}</span>
+                    <span className="muted"> · nevrátené z </span>
+                    <Link to="/event/$id" params={{ id: n.events.id }} className="link">{n.events.title}</Link>
                   </li>
                 ))}
               </ul>

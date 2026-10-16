@@ -1,7 +1,8 @@
 // Vzhľad appky: predvoľby (PSP, Wii, Terminal…) + posuvníky na všetko. Ukladá sa v prehliadači (localStorage).
+// Komponenty (tlačidlá, polia, karty…) berú farby len z premenných, ktoré tu nastaví applyCfg – v styles.css.
 import { setFx, type FxMode } from './fx'
 
-export type FontId = 'default' | 'system' | 'opensans' | 'rounded' | 'exo' | 'techno' | 'tahoma' | 'mono' | 'typewriter' | 'terminal' | 'pixel' | 'serif' | 'bookish'
+export type FontId = 'default' | 'barlow' | 'system' | 'opensans' | 'rounded' | 'exo' | 'techno' | 'tahoma' | 'mono' | 'typewriter' | 'terminal' | 'pixel' | 'serif' | 'bookish'
 
 export type Cfg = {
   preset: string
@@ -128,7 +129,8 @@ const SYS = '-apple-system, system-ui, "Helvetica Neue", Arial, sans-serif'
 const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace'
 const F = (label: string, body: string, display: string = body) => ({ label, body, display })
 const FONTS: Record<FontId, { label: string; body: string; display: string }> = {
-  default: F('Barlow', '"Barlow", system-ui, sans-serif', '"Barlow Condensed", "Barlow", system-ui, sans-serif'),
+  default: F('Inter', `"Inter", ${SYS}`),
+  barlow: F('Barlow', `"Barlow", ${SYS}`, `"Barlow Condensed", "Barlow", ${SYS}`),
   system: F('Systém', SYS),
   opensans: F('Open Sans', `"Open Sans", ${SYS}`),
   rounded: F('Okrúhle (Wii)', `"Nunito", ui-rounded, ${SYS}`),

@@ -15,19 +15,19 @@ export function ReceiptViewer({ localUrl, isPdf, driveUrl }: { localUrl: string 
   if (!src && !driveUrl && !localUrl) return null
 
   const link = driveUrl && (
-    <a href={driveUrl} target="_blank" rel="noreferrer" className="text-[var(--color-sky)] text-sm font-semibold">Otvoriť doklad v Drive ↗</a>
+    <a href={driveUrl} target="_blank" rel="noreferrer" className="link text-sm">Otvoriť doklad v Drive ↗</a>
   )
   if (!src || broken || isPdf) {
-    return <div className="card p-3 text-sm">{isPdf && localUrl ? 'PDF doklad je vybraný.' : 'Náhľad nie je k dispozícii.'} {link}</div>
+    return <div className="rounded-[var(--ctl-r)] bg-[var(--fill)] p-3 text-sm">{isPdf && localUrl ? 'PDF doklad je vybraný.' : 'Náhľad nie je k dispozícii.'} {link}</div>
   }
 
   const close = () => { setFull(false); setZoom(1) }
   return (
     <>
-      <div className="sticky top-14 z-10 -mx-1 px-1 py-1" style={{ background: 'var(--card)' }}>
-        <button onClick={() => setFull(true)} className="relative block w-full h-36 rounded-xl overflow-hidden border line bg-black/5" aria-label="Zväčšiť doklad">
+      <div className="sticky z-10 -mx-1 px-1 py-1" style={{ top: 'env(safe-area-inset-top, 0px)', background: 'var(--bg)' }}>
+        <button onClick={() => setFull(true)} className="relative block w-full h-36 rounded-[var(--ctl-r)] overflow-hidden border line bg-[var(--fill)]" aria-label="Zväčšiť doklad">
           <img src={src} alt="Doklad" className="w-full h-full object-contain" onError={() => setBroken(true)} />
-          <span className="absolute bottom-1 right-1 px-2 py-1 rounded-lg bg-black/70 text-white text-xs font-semibold">🔍 Zväčšiť</span>
+          <span className="absolute bottom-1.5 right-1.5 px-2 py-1 rounded-md bg-black/70 text-white text-xs font-semibold">Zväčšiť</span>
         </button>
       </div>
 

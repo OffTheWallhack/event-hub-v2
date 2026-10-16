@@ -1,16 +1,17 @@
 import { useState, type ReactNode } from 'react'
-import { createPortal } from 'react-dom'
+import { ChevronDown, RotateCcw, Star } from 'lucide-react'
 import { BASE, FONT_LIST, PRESETS, applyCfg, loadCfg, loadMine, saveMine, type Cfg } from '../lib/theme'
 import type { FxMode } from '../lib/fx'
+import { Section } from './ui'
 
 const FX_LIST: { id: FxMode; label: string }[] = [
   { id: 'none', label: 'Žiadne' }, { id: 'aura', label: 'Aura' }, { id: 'waves', label: 'Vlny' }, { id: 'grid', label: 'Mriežka' },
   { id: 'matrix', label: 'Matrix' }, { id: 'stars', label: 'Hviezdy' }, { id: 'bubbles', label: 'Bubliny' }, { id: 'ps2', label: 'PS2' },
 ]
+const fontOf = (c: Cfg) => FONT_LIST.find((f) => f.id === c.font)?.family ?? FONT_LIST[0].family
 
-/** Tlačidlo 🎨 v hlavičke: predvoľby (PSP, Wii, Terminal…) a posuvníky na farby, animáciu, tvar aj písmo. */
+/** Vzhľad: predvoľby (PSP, Wii, Terminal…) a jemné doladenie farieb, pozadia, tvaru aj písma. Ukladá sa v prehliadači. */
 export function ThemePicker() {
-  const [open, setOpen] = useState(false)
   const [cfg, setCfg] = useState<Cfg>(loadCfg)
   const [mine, setMine] = useState<Cfg | null>(loadMine)
   const [msg, setMsg] = useState('')
@@ -26,123 +27,116 @@ export function ThemePicker() {
   const preset = PRESETS.find((p) => p.id === cfg.preset)
 
   const slider = (label: string, key: keyof Cfg, min: number, max: number, unit = '') => (
-    <label className="block mb-2">
-      <span className="flex justify-between text-xs"><span>{label}</span><span className="muted tabular-nums">{cfg[key] as number}{unit}</span></span>
-      <input type="range" min={min} max={max} value={cfg[key] as number} onChange={(e) => update({ [key]: Number(e.target.value) })} className="w-full h-7" style={{ accentColor: 'var(--color-signal)' }} />
+    <label className="block">
+      <span className="flex justify-between text-sm mb-1"><span>{label}</span><span className="muted num">{cfg[key] as number}{unit}</span></span>
+      <input type="range" min={min} max={max} value={cfg[key] as number} onChange={(e) => update({ [key]: Number(e.target.value) })} className="w-full h-7" />
     </label>
   )
   const color = (label: string, key: keyof Cfg) => (
-    <label className="flex flex-col items-center gap-1 text-[11px]">
-      <input type="color" value={cfg[key] as string} onChange={(e) => update({ [key]: e.target.value })} className="w-12 h-9 p-0 border-0 bg-transparent" />
+    <label className="flex flex-col items-center gap-1.5 text-xs muted">
+      <input type="color" value={cfg[key] as string} onChange={(e) => update({ [key]: e.target.value })} className="w-11 h-11 p-0 rounded-full overflow-hidden border line bg-transparent" />
       {label}
     </label>
   )
   const chips = <T extends string>(list: { id: T; label: string }[], value: T, on: (id: T) => void) => (
-    <div className="flex flex-wrap gap-1.5 mb-2">
-      {list.map((x) => (
-        <button key={x.id} onClick={() => on(x.id)} className={'h-8 px-3 rounded-lg border line text-xs font-semibold ' + (value === x.id ? 'bg-[var(--color-signal)] text-[var(--on-accent,#fff)] border-transparent' : '')}>{x.label}</button>
-      ))}
+    <div className="chips">
+      {list.map((x) => <button key={x.id} type="button" onClick={() => on(x.id)} aria-pressed={value === x.id} className="chip">{x.label}</button>)}
     </div>
+  )
+
+  const tile = (c: Cfg, label: ReactNode, on: boolean, onClick: () => void, key: string) => (
+    <button key={key} type="button" onClick={onClick} aria-pressed={on} className="text-left">
+      <span
+        className={'relative block aspect-[4/3] rounded-[var(--ctl-r)] overflow-hidden border ' + (on ? 'ring-2 ring-[var(--color-signal)] ring-offset-2 ring-offset-[var(--bg)]' : 'line')}
+        style={{ background: c.bg }}
+      >
+        <span
+          className="absolute inset-x-2 top-2 bottom-2 flex flex-col justify-between p-1.5"
+          style={{ background: `color-mix(in srgb, ${c.card} ${c.cardOp}%, transparent)`, border: `${Math.max(1, Math.min(c.border, 2))}px solid ${c.line}`, borderRadius: Math.min(c.radius, 14) * 0.6 }}
+        >
+          <span className="text-sm font-bold leading-none" style={{ color: c.fg, fontFamily: fontOf(c) }}>Aa</span>
+          <span className="block h-1.5 w-2/3 rounded-full" style={{ background: c.accent }} />
+        </span>
+      </span>
+      <span className={'block mt-1.5 text-xs leading-tight truncate ' + (on ? 'font-semibold' : 'muted')}>{label}</span>
+    </button>
   )
 
   return (
     <>
-      <button onClick={() => setOpen(!open)} className="card p-4 mt-4 w-full text-left flex items-center gap-3" aria-label="Farebná téma">
-        <span className="text-2xl">🎨</span>
-        <span className="flex-1 min-w-0">
-          <span className="block font-semibold text-sm">Vzhľad a témy</span>
-          <span className="block muted text-xs">Predvoľby (PSP, Wii, Terminal…), farby, animácie, písmo. Teraz: {preset?.label ?? 'vlastné'}</span>
-        </span>
-        <span className="muted">›</span>
-      </button>
-      {open && createPortal(
-        <div className="fixed z-50 inset-x-0 bottom-0 max-h-[52vh] overflow-y-auto rounded-t-2xl border-t line p-3 pb-6 shadow-2xl" style={{ background: 'color-mix(in srgb, var(--bg) 94%, transparent)', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
-          <div className="flex items-center gap-2 mb-2 sticky top-0 -mt-1 pt-1 pb-1" style={{ background: 'inherit' }}>
-            <h2 className="display text-xl font-bold flex-1">Vzhľad{preset ? ` · ${preset.label}` : ''}</h2>
-            <button onClick={() => pick(preset?.cfg ?? BASE, false)} className="h-8 px-3 rounded-lg border line text-xs">Obnoviť</button>
-            <button onClick={() => setOpen(false)} className="h-8 px-3 rounded-lg bg-[var(--color-signal)] text-[var(--on-accent,#fff)] text-xs font-semibold">Hotovo</button>
+      <Section
+        title="Téma"
+        sub={`Teraz: ${preset?.label ?? 'vlastná'}`}
+        action={<button onClick={() => pick(preset?.cfg ?? BASE, false)} className="btn btn-sm btn-quiet" title="Vrátiť doladenie témy"><RotateCcw aria-hidden />Obnoviť</button>}
+      >
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-x-3 gap-y-4">
+          {mine && tile(mine, <span className="inline-flex items-center gap-1"><Star className="w-3 h-3" aria-hidden />Moja</span>, false, () => pick(mine, false), 'mine')}
+          {PRESETS.map((p) => tile(p.cfg, p.label, cfg.preset === p.id, () => pick(p.cfg), p.id))}
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-5">
+          <button onClick={() => { saveMine(cfg); setMine(cfg); setMsg('Uložené ako „Moja“.'); setTimeout(() => setMsg(''), 2000) }} className="btn btn-sm">
+            <Star aria-hidden />Uložiť ako „Moja“
+          </button>
+          <label className="check text-sm">
+            <input type="checkbox" checked={keepFont} onChange={(e) => toggleKeep(e.target.checked)} />
+            Nechať moje písmo pri zmene témy
+          </label>
+          {msg && <span className="text-sm muted">{msg}</span>}
+        </div>
+      </Section>
+
+      <div className="card list">
+        <Group title="Farby">
+          {slider('Odtieň (celá appka)', 'hue', -180, 180, '°')}
+          {slider('Sýtosť farieb', 'sat', 0, 200, ' %')}
+          {slider('Jas pozadí', 'bright', -30, 30)}
+          {slider('Kontrast písma', 'contrast', -40, 40)}
+          <div className="flex justify-between pt-1">{color('Pozadie', 'bg')}{color('Karty', 'card')}{color('Text', 'fg')}{color('Čiary', 'line')}{color('Akcent', 'accent')}</div>
+        </Group>
+        <Group title="Pozadie a animácia">
+          {chips(FX_LIST, cfg.fx, (id) => update({ fx: id }))}
+          {cfg.fx !== 'none' && (
+            <>
+              {slider('Rýchlosť (0 = stojí)', 'fxSpeed', 0, 300, ' %')}
+              {slider('Sila / viditeľnosť', 'fxInt', 0, 100, ' %')}
+              {cfg.fx === 'aura' && slider('Rozmazanie aury', 'fxBlur', 0, 150, ' px')}
+              <div className="flex justify-around pt-1">{color('Farba 1', 'fx1')}{color('Farba 2', 'fx2')}{color('Farba 3', 'fx3')}</div>
+            </>
+          )}
+        </Group>
+        <Group title="Karty a tvar">
+          {slider('Priehľadnosť kariet (100 = plné)', 'cardOp', 20, 100, ' %')}
+          {slider('Rozmazanie za kartou (sklo)', 'blur', 0, 30, ' px')}
+          {slider('Zaoblenie rohov', 'radius', 0, 30, ' px')}
+          {slider('Hrúbka orámovania', 'border', 0, 4, ' px')}
+          {slider('Žiara okolo kariet', 'shadow', 0, 40, ' px')}
+        </Group>
+        <Group title="Písmo">
+          <div className="chips">
+            {FONT_LIST.map((f) => (
+              <button key={f.id} type="button" onClick={() => update({ font: f.id })} style={{ fontFamily: f.family }} aria-pressed={cfg.font === f.id} className="chip">{f.label}</button>
+            ))}
           </div>
-
-          <Sec title="Predvoľby" open>
-            <div className="grid grid-cols-4 gap-1.5">
-              {PRESETS.map((p) => (
-                <button key={p.id} onClick={() => pick(p.cfg)} className={'rounded-lg border-2 p-1 text-left ' + (cfg.preset === p.id ? 'border-[var(--color-signal)]' : 'border-transparent')} style={{ background: p.cfg.bg }}>
-                  <span className="flex h-5 rounded overflow-hidden mb-1 border" style={{ borderColor: p.cfg.line }}>
-                    <span className="flex-1" style={{ background: p.cfg.card }} />
-                    <span className="w-2" style={{ background: p.cfg.accent }} />
-                  </span>
-                  <span className="block text-[10px] font-semibold leading-tight truncate" style={{ color: p.cfg.fg }}>{p.label}</span>
-                </button>
-              ))}
-              {mine && (
-                <button onClick={() => pick(mine, false)} className="rounded-lg border-2 border-dashed line p-1 text-left">
-                  <span className="block h-5 mb-1 rounded" style={{ background: `linear-gradient(90deg, ${mine.bg}, ${mine.card} 60%, ${mine.accent})` }} />
-                  <span className="block text-[10px] font-semibold">⭐ Moja</span>
-                </button>
-              )}
-            </div>
-            <button onClick={() => { saveMine(cfg); setMine(cfg); setMsg('Uložené ako „Moja“.'); setTimeout(() => setMsg(''), 2000) }} className="mt-2 h-8 px-3 rounded-lg border line text-xs">⭐ Uložiť toto nastavenie ako „Moja“</button>
-            {msg && <span className="text-xs ml-2">{msg}</span>}
-          </Sec>
-
-          <Sec title="Farby">
-            {slider('Odtieň (celá appka)', 'hue', -180, 180, '°')}
-            {slider('Sýtosť farieb', 'sat', 0, 200, ' %')}
-            {slider('Jas pozadí', 'bright', -30, 30)}
-            {slider('Kontrast písma', 'contrast', -40, 40)}
-            <div className="flex justify-around mt-1">{color('Pozadie', 'bg')}{color('Karty', 'card')}{color('Text', 'fg')}{color('Čiary', 'line')}{color('Akcent', 'accent')}</div>
-          </Sec>
-
-          <Sec title="Pozadie a animácia">
-            {chips(FX_LIST, cfg.fx, (id) => update({ fx: id }))}
-            {cfg.fx !== 'none' && (
-              <>
-                {slider('Rýchlosť (0 = stojí)', 'fxSpeed', 0, 300, ' %')}
-                {slider('Sila / viditeľnosť', 'fxInt', 0, 100, ' %')}
-                {cfg.fx === 'aura' && slider('Rozmazanie aury', 'fxBlur', 0, 150, ' px')}
-                <div className="flex justify-around mt-1">{color('Farba 1', 'fx1')}{color('Farba 2', 'fx2')}{color('Farba 3', 'fx3')}</div>
-              </>
-            )}
-          </Sec>
-
-          <Sec title="Karty a tvar">
-            {slider('Priehľadnosť kariet (100 = plné)', 'cardOp', 20, 100, ' %')}
-            {slider('Rozmazanie za kartou (sklo)', 'blur', 0, 30, ' px')}
-            {slider('Zaoblenie rohov', 'radius', 0, 30, ' px')}
-            {slider('Hrúbka orámovania', 'border', 0, 4, ' px')}
-            {slider('Žiara okolo kariet', 'shadow', 0, 40, ' px')}
-          </Sec>
-
-          <Sec title="Písmo">
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {FONT_LIST.map((f) => (
-                <button key={f.id} onClick={() => update({ font: f.id })} style={{ fontFamily: f.family }} className={'h-9 px-3 rounded-lg border line text-sm ' + (cfg.font === f.id ? 'bg-[var(--color-signal)] text-[var(--on-accent,#fff)] border-transparent' : '')}>{f.label}</button>
-              ))}
-            </div>
-            <label className="flex items-center gap-2 text-sm mb-3">
-              <input type="checkbox" checked={keepFont} onChange={(e) => toggleKeep(e.target.checked)} className="w-5 h-5" />
-              Nechať moje písmo pri zmene témy
-            </label>
-            {slider('Veľkosť písma', 'fontScale', 85, 130, ' %')}
-            {slider('Žiara textu', 'glow', 0, 14, ' px')}
-          </Sec>
-
-          <Sec title="CRT efekty">
-            {slider('Riadky ako na starej obrazovke', 'scan', 0, 100, ' %')}
-            {slider('Tmavé okraje', 'vignette', 0, 100, ' %')}
-          </Sec>
-        </div>,
-        document.body,
-      )}
+          {slider('Veľkosť písma', 'fontScale', 85, 130, ' %')}
+          {slider('Žiara textu', 'glow', 0, 14, ' px')}
+        </Group>
+        <Group title="CRT efekty">
+          {slider('Riadky ako na starej obrazovke', 'scan', 0, 100, ' %')}
+          {slider('Tmavé okraje', 'vignette', 0, 100, ' %')}
+        </Group>
+      </div>
     </>
   )
 }
 
-function Sec({ title, open, children }: { title: string; open?: boolean; children: ReactNode }) {
+function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <details open={open} className="border-t line py-2">
-      <summary className="text-sm font-semibold cursor-pointer select-none py-1">{title}</summary>
-      <div className="pt-2">{children}</div>
+    <details className="group">
+      <summary className="flex items-center justify-between px-4 h-14 font-medium select-none">
+        {title}
+        <ChevronDown className="w-5 h-5 muted transition-transform group-open:rotate-180" aria-hidden />
+      </summary>
+      <div className="px-4 pb-5 grid gap-4">{children}</div>
     </details>
   )
 }

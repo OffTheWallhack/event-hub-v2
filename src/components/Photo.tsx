@@ -26,11 +26,11 @@ export function PhotoUpload({ kind, id, onUploaded, label = 'Nahrať obrázok' }
   }
   return (
     <span className="grid gap-1">
-      <label className={'inline-flex items-center justify-center h-10 px-4 rounded-lg border line text-sm font-medium cursor-pointer ' + (busy ? 'opacity-60 pointer-events-none' : '')}>
+      <label className={'btn btn-sm cursor-pointer ' + (busy ? 'opacity-60 pointer-events-none' : '')}>
         {busy ? 'Nahrávam…' : label}
         <input type="file" accept="image/*" className="hidden" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = '' }} />
       </label>
-      {error && <span className="text-xs text-[var(--color-signal)]">{error}</span>}
+      {error && <span className="err !text-xs">{error}</span>}
     </span>
   )
 }

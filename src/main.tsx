@@ -13,7 +13,7 @@ applyCfg(loadCfg())
 
 function App() {
   const { loading, session, profile, isAdmin } = useAuth()
-  if (loading) return <div className="min-h-full grid place-items-center muted">Načítavam…</div>
+  if (loading) return <div className="min-h-full grid place-items-center muted text-sm">Načítavam…</div>
   if (!session) return <Login />
   if (!profile || profile.role === 'pending') return <Pending />
   return <RouterProvider router={router} context={{ isAdmin }} />

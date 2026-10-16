@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Chips, ErrorText, Field } from './ui'
 import { useAuth } from '../lib/auth'
 import { type Flavor, type MoveType, MOVE_LABEL, MOVE_SIGN, flavorName, flavorStyle } from '../lib/cartons'
 import { fmtRange, startDay, todayLocal } from '../lib/events'
@@ -90,7 +91,6 @@ export function MovementForm({
     else onDone(true)
   }
 
-  const input = 'w-full h-11 px-3 rounded-lg border line bg-transparent'
   const pickEvent = (id: string) => {
     setEventId(id)
     const ev = events.find((e) => e.id === id)
@@ -98,46 +98,41 @@ export function MovementForm({
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="form">
       {mode === 'move' && !fixedEventId && (
-        <div className="flex flex-wrap gap-1">
-          {TYPES.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setType(t)}
-              className={'h-10 px-3 rounded-lg border line text-sm ' + (type === t ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-            >
-              {MOVE_SIGN[t] > 0 ? '+ ' : '− '}{MOVE_LABEL[t]}
-            </button>
-          ))}
+        <div className="field">
+          <span className="field-label">Typ pohybu</span>
+          <Chips
+            options={TYPES.map((t) => [t, `${MOVE_SIGN[t] > 0 ? '+' : '−'} ${MOVE_LABEL[t]}`] as const)}
+            isOn={(t) => type === t}
+            onPick={setType}
+          />
         </div>
       )}
 
       {mode === 'move' && !fixedEventId && (type === 'event' || type === 'returned') && (
-        <label className="grid gap-1 text-sm">
-          <span className="muted">Event{type === 'returned' ? ' (voliteľné)' : ''}</span>
-          <select className={input} value={eventId} onChange={(e) => pickEvent(e.target.value)}>
+        <Field label={`Event${type === 'returned' ? ' (voliteľné)' : ''}`}>
+          <select className="input" value={eventId} onChange={(e) => pickEvent(e.target.value)}>
             <option value="">— vyber —</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>{fmtRange(e)} · {e.title}</option>
             ))}
           </select>
-        </label>
+        </Field>
       )}
 
-      <div className="grid gap-1 text-sm">
-        <span className="muted">{mode === 'inventory' ? 'Skutočný stav v sklade (kartóny)' : 'Počet kartónov'}</span>
+      <div className="field">
+        <span className="field-label">{mode === 'inventory' ? 'Skutočný stav v sklade (kartóny)' : 'Počet kartónov'}</span>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {flavors.map((f) => (
-            <label key={f.id} className="flex items-center gap-2 rounded-lg border-2 pl-2 pr-1 py-1" style={flavorStyle(f)}>
+            <label key={f.id} className="flex items-center gap-2 rounded-[var(--ctl-r)] border-2 pl-3 pr-1.5 py-1.5" style={flavorStyle(f)}>
               <span className="flex-1 font-semibold text-sm truncate">{flavorName(f)}</span>
               <input
                 type="number"
                 inputMode="numeric"
                 min={0}
                 placeholder="0"
-                className="w-16 h-9 px-2 rounded-md text-right bg-white/90 text-black font-bold"
+                className="w-16 h-9 px-2 rounded-[calc(var(--ctl-r)*.7)] text-right bg-white/90 text-black font-bold text-base"
                 value={qty[f.id] ?? ''}
                 onChange={(e) => setQty((q) => ({ ...q, [f.id]: e.target.value }))}
               />
@@ -146,29 +141,18 @@ export function MovementForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="grid gap-1 text-sm">
-          <span className="muted">Dátum</span>
-          <input type="date" className={input} value={day} onChange={(e) => setDay(e.target.value)} />
-        </label>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Dátum"><input type="date" className="input" value={day} onChange={(e) => setDay(e.target.value)} /></Field>
         {mode === 'move' && type !== 'delivery' && (
-          <label className="grid gap-1 text-sm">
-            <span className="muted">Komu / od koho</span>
-            <input className={input} value={recipient} onChange={(e) => setRecipient(e.target.value)} />
-          </label>
+          <Field label="Komu / od koho"><input className="input" value={recipient} onChange={(e) => setRecipient(e.target.value)} /></Field>
         )}
       </div>
-      <label className="grid gap-1 text-sm">
-        <span className="muted">Poznámka</span>
-        <input className={input} value={note} onChange={(e) => setNote(e.target.value)} />
-      </label>
+      <Field label="Poznámka"><input className="input" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
 
-      {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-      <div className="flex gap-2">
-        <button onClick={save} disabled={saving} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-60">
-          {saving ? 'Ukladám…' : 'Uložiť'}
-        </button>
-        <button onClick={() => onDone(false)} className="h-11 px-4 rounded-lg border line">Zrušiť</button>
+      <ErrorText>{error}</ErrorText>
+      <div className="form-actions">
+        <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Ukladám…' : 'Uložiť'}</button>
+        <button onClick={() => onDone(false)} className="btn btn-quiet">Zrušiť</button>
       </div>
     </div>
   )

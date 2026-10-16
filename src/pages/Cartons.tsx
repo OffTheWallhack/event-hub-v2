@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
+import { Empty, ErrorText, Field, PageHeader, Section } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { MovementForm } from '../components/MovementForm'
@@ -61,75 +63,72 @@ export function Cartons() {
   const list = showAll ? moves : moves.slice(0, 30)
 
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <div className="flex items-end gap-2">
-        <h1 className="display text-4xl font-bold flex-1">Kartóny</h1>
-        <p className="muted text-sm pb-1">Spolu v sklade: <b className="text-[var(--fg)]">{total}</b></p>
-      </div>
+    <div className="page">
+      <PageHeader
+        title="Kartóny"
+        sub={<>Spolu v sklade: <b className="text-[var(--fg)] num">{total}</b></>}
+        actions={isAdmin && panel === null && (
+          <>
+            <button onClick={() => setPanel('inventory')} className="btn btn-sm">Inventúra</button>
+            <button onClick={() => setPanel('move')} className="btn btn-sm btn-primary"><Plus aria-hidden />Pohyb</button>
+          </>
+        )}
+      />
 
-      {error && <p className="text-[var(--color-signal)]">{error}</p>}
+      <ErrorText>{error}</ErrorText>
 
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
         {tiles.map((f) => {
           const n = stock[f.id] ?? 0
           return (
-            <div key={f.id} className={'relative overflow-hidden rounded-xl border-2 p-2 min-h-[4.5rem] ' + (n === 0 ? 'opacity-45' : '')} style={flavorStyle(f)}>
+            <div key={f.id} className={'relative overflow-hidden rounded-[calc(var(--r,16px)*0.9)] border-2 p-2.5 min-h-[5rem] ' + (n === 0 ? 'opacity-45' : '')} style={{ ...flavorStyle(f), textShadow: 'none' }}>
               <p className="text-xs font-semibold truncate relative z-10 max-w-[70%]">{flavorName(f)}</p>
-              <p className="display text-3xl font-bold leading-none mt-1 relative z-10">{n}</p>
+              <p className="text-3xl font-bold leading-none mt-1.5 relative z-10 num">{n}</p>
               <Photo kind="flavor-photos" path={f.photo_path} alt={flavorName(f)} className="absolute right-0.5 bottom-0.5 h-[85%] w-auto max-w-[55%] object-contain drop-shadow" />
             </div>
           )
         })}
       </div>
 
-      {isAdmin && panel === null && (
-        <div className="flex gap-2">
-          <button onClick={() => setPanel('move')} className="h-11 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)]">+ Pohyb</button>
-          <button onClick={() => setPanel('inventory')} className="h-11 px-4 rounded-lg border line font-medium">Inventúra</button>
-        </div>
-      )}
       {panel && (
-        <Card title={panel === 'move' ? 'Nový pohyb' : 'Inventúra – zadaj skutočný stav'}>
-          {panel === 'inventory' && (
-            <p className="text-sm muted mb-3">Appka dopočíta rozdiel a uloží ho ako opravu. Pohyby sa nemenia.</p>
-          )}
+        <Section title={panel === 'move' ? 'Nový pohyb' : 'Inventúra – zadaj skutočný stav'} sub={panel === 'inventory' ? 'Appka dopočíta rozdiel a uloží ho ako opravu. Pohyby sa nemenia.' : undefined}>
           <MovementForm flavors={active} stock={stock} initialMode={panel} onDone={done} />
-        </Card>
+        </Section>
       )}
 
-      <div className="flex items-center gap-2 mt-2">
-        <h2 className="display text-2xl font-bold flex-1">Rok {year}</h2>
-        <button onClick={() => setYear(year - 1)} className="h-9 w-9 rounded-lg border line" aria-label="Predošlý rok">‹</button>
-        <button onClick={() => setYear(year + 1)} className="h-9 w-9 rounded-lg border line" aria-label="Ďalší rok">›</button>
+      <div className="flex items-center gap-2 mt-3">
+        <h2 className="section-title !text-xl flex-1">Rok {year}</h2>
+        <button onClick={() => setYear(year - 1)} className="btn btn-sm btn-icon" aria-label="Predošlý rok"><ChevronLeft aria-hidden /></button>
+        <button onClick={() => setYear(year + 1)} className="btn btn-sm btn-icon" aria-label="Ďalší rok"><ChevronRight aria-hidden /></button>
       </div>
 
       <Stats moves={moves} byId={byId} />
 
-      <Card title="História pohybov">
+      <Section title="História pohybov">
         {moves.length === 0 ? (
-          <p className="muted text-sm">Žiadne pohyby v roku {year}.</p>
+          <Empty>Žiadne pohyby v roku {year}.</Empty>
         ) : (
-          <ul className="divide-y line text-sm">
+          <ul className="list text-sm">
             {list.map((m) => {
               const f = byId.get(m.flavor_id)
               return (
-                <li key={m.id} className="py-2 flex items-center gap-2">
-                  <span className="muted w-12 shrink-0 text-xs">{fmtDay(m.occurred_at.slice(0, 10)).replace(/ \d{4}$/, '')}</span>
-                  <span className={'w-10 shrink-0 text-right font-bold tabular-nums ' + (m.cartons > 0 ? 'text-green-700 dark:text-green-400' : '')}>
+                <li key={m.id} className="row !py-2.5">
+                  <span className="muted w-11 shrink-0 text-xs num whitespace-nowrap">{fmtDay(m.occurred_at.slice(0, 10)).replace(/ \d{4}$/, '')}</span>
+                  <span className={'w-9 shrink-0 text-right font-bold num ' + (m.cartons > 0 ? 'text-[var(--ok)]' : '')}>
                     {m.cartons > 0 ? '+' : ''}{m.cartons}
                   </span>
-                  {f && <span className="px-1.5 rounded border text-xs font-semibold shrink-0" style={flavorStyle(f)}>{flavorName(f)}</span>}
+                  {f && <span className="badge border shrink-0" style={{ ...flavorStyle(f), textShadow: 'none' }}>{flavorName(f)}</span>}
                   <span className="flex-1 min-w-0 truncate">
                     {MOVE_LABEL[m.type]}
                     {m.events && (
-                      <> · <Link to="/event/$id" params={{ id: m.events.id }} className="text-[var(--color-sky)]">{m.events.title}</Link></>
+                      <> · <Link to="/event/$id" params={{ id: m.events.id }} className="link font-medium">{m.events.title}</Link></>
                     )}
                     {m.recipient && <span className="muted"> · {m.recipient}</span>}
                     {m.note && <span className="muted"> · {m.note}</span>}
                     {!m.counts_in_stock && <span className="muted"> · len štatistika</span>}
                   </span>
                   {isAdmin && (
-                    <button onClick={() => remove(m)} className="muted px-2 shrink-0" aria-label="Zmazať pohyb">×</button>
+                    <button onClick={() => remove(m)} className="btn btn-sm btn-icon btn-quiet muted -mr-2" aria-label="Zmazať pohyb"><X aria-hidden /></button>
                   )}
                 </li>
               )
@@ -137,12 +136,12 @@ export function Cartons() {
           </ul>
         )}
         {!showAll && moves.length > list.length && (
-          <button onClick={() => setShowAll(true)} className="mt-2 h-10 px-4 rounded-lg border line text-sm">Zobraziť všetkých {moves.length}</button>
+          <button onClick={() => setShowAll(true)} className="btn btn-sm btn-block mt-2">Zobraziť všetkých {moves.length}</button>
         )}
-      </Card>
+      </Section>
 
       {isAdmin && <FlavorAdmin flavors={flavors} onChanged={() => setReload((r) => r + 1)} />}
-    </section>
+    </div>
   )
 }
 
@@ -170,9 +169,9 @@ function Stats({ moves, byId }: { moves: Movement[]; byId: Map<string, Flavor> }
 
   return (
     <div className="grid sm:grid-cols-2 gap-4">
-      <Card title="Prišlo / spotreba">
+      <Section title="Prišlo / spotreba">
         {rows.length === 0 ? (
-          <p className="muted text-sm">Žiadne dáta.</p>
+          <Empty>Žiadne dáta.</Empty>
         ) : (
           <table className="w-full text-sm">
             <thead>
@@ -185,26 +184,26 @@ function Stats({ moves, byId }: { moves: Movement[]; byId: Map<string, Flavor> }
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.f!.id} className="border-t line">
+                <tr key={r.f!.id} className="border-t">
                   <td className="py-1.5">{flavorName(r.f!)}</td>
-                  <td className="text-right tabular-nums">{r.in || '–'}</td>
-                  <td className="text-right tabular-nums font-semibold">{r.used || '–'}</td>
-                  <td className="text-right tabular-nums">{r.other || '–'}</td>
+                  <td className="text-right num">{r.in || '–'}</td>
+                  <td className="text-right num font-semibold">{r.used || '–'}</td>
+                  <td className="text-right num">{r.other || '–'}</td>
                 </tr>
               ))}
-              <tr className="border-t-2 line font-bold">
+              <tr className="border-t-2 font-bold">
                 <td className="py-1.5">Spolu</td>
-                <td className="text-right tabular-nums">{sum.in}</td>
-                <td className="text-right tabular-nums">{sum.used}</td>
-                <td className="text-right tabular-nums">{sum.other}</td>
+                <td className="text-right num">{sum.in}</td>
+                <td className="text-right num">{sum.used}</td>
+                <td className="text-right num">{sum.other}</td>
               </tr>
             </tbody>
           </table>
         )}
-      </Card>
-      <Card title="Spotreba podľa oddelenia">
+      </Section>
+      <Section title="Spotreba podľa oddelenia">
         {deptRows.length === 0 ? (
-          <p className="muted text-sm">Žiadne dáta.</p>
+          <Empty>Žiadne dáta.</Empty>
         ) : (
           <ul className="grid gap-2 text-sm">
             {deptRows.map(([d, n]) => {
@@ -213,18 +212,18 @@ function Stats({ moves, byId }: { moves: Movement[]; byId: Map<string, Flavor> }
                 <li key={d}>
                   <div className="flex justify-between">
                     <span>{d === 'none' ? 'Neurčené' : DEPT_LABEL[d as Department] ?? d}</span>
-                    <span className="tabular-nums"><b>{Math.round(n * 10) / 10}</b> <span className="muted">({pct} %)</span></span>
+                    <span className="num"><b>{Math.round(n * 10) / 10}</b> <span className="muted">({pct} %)</span></span>
                   </div>
-                  <div className="h-2 rounded bg-[var(--line)] mt-1">
-                    <div className="h-2 rounded bg-[var(--color-signal)]" style={{ width: pct + '%' }} />
+                  <div className="h-2 rounded-full bg-[var(--fill-2)] mt-1.5 overflow-hidden">
+                    <div className="h-2 rounded-full bg-[var(--color-signal)]" style={{ width: pct + '%' }} />
                   </div>
                 </li>
               )
             })}
           </ul>
         )}
-        <p className="text-xs muted mt-2">Event s viacerými oddeleniami sa delí rovnakým dielom.</p>
-      </Card>
+        <p className="text-xs muted mt-3">Event s viacerými oddeleniami sa delí rovnakým dielom.</p>
+      </Section>
     </div>
   )
 }
@@ -253,41 +252,40 @@ function FlavorAdmin({ flavors, onChanged }: { flavors: Flavor[]; onChanged: () 
     onChanged()
   }
 
-  const input = 'w-full h-10 px-3 rounded-lg border line bg-transparent'
   return (
-    <Card title="Príchute">
-      <ul className="grid gap-1">
+    <Section title="Príchute" action={!edit && <button onClick={() => setEdit({ active: true, sort_order: 999 })} className="btn btn-sm"><Plus aria-hidden />Nová</button>}>
+      <ul className="chips">
         {flavors.map((f) => (
           <li key={f.id}>
-            <button onClick={() => setEdit(f)} className={'w-full flex items-center gap-2 text-left text-sm py-1 ' + (f.active ? '' : 'opacity-50')}>
-              <span className="px-2 py-0.5 rounded border-2 font-semibold" style={flavorStyle(f)}>{flavorName(f)}</span>
-              <span className="muted flex-1 truncate">{f.name}</span>
-              {!f.active && <span className="muted text-xs">neaktívna</span>}
+            <button
+              onClick={() => setEdit(f)}
+              className={'chip border-2 font-semibold ' + (f.active ? '' : 'opacity-45')}
+              style={{ ...flavorStyle(f), textShadow: 'none' }}
+              title={f.active ? f.name : `${f.name} (neaktívna)`}
+            >
+              {flavorName(f)}{!f.active && <span className="count">neaktívna</span>}
             </button>
           </li>
         ))}
       </ul>
-      {edit ? (
-        <div className="grid gap-3 mt-4 border-t line pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="grid gap-1 text-sm"><span className="muted">Názov</span>
-              <input className={input} value={edit.name ?? ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
-            <label className="grid gap-1 text-sm"><span className="muted">Krátky názov</span>
-              <input className={input} value={edit.label ?? ''} onChange={(e) => setEdit({ ...edit, label: e.target.value })} /></label>
+      {edit && (
+        <div className="form mt-4 border-t pt-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Názov"><input className="input" value={edit.name ?? ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></Field>
+            <Field label="Krátky názov"><input className="input" value={edit.label ?? ''} onChange={(e) => setEdit({ ...edit, label: e.target.value })} /></Field>
           </div>
-          <div className="grid grid-cols-4 gap-2 items-end">
+          <div className="grid grid-cols-4 gap-3 items-end">
             <ColorField label="Pozadie" value={edit.color_bg ?? '#ffffff'} onChange={(v) => setEdit({ ...edit, color_bg: v })} />
             <ColorField label="Text" value={edit.color_text ?? '#000000'} onChange={(v) => setEdit({ ...edit, color_text: v })} />
             <ColorField label="Okraj" value={edit.color_border ?? '#cccccc'} onChange={(v) => setEdit({ ...edit, color_border: v })} />
-            <label className="grid gap-1 text-sm"><span className="muted">Poradie</span>
-              <input type="number" inputMode="numeric" className={input} value={edit.sort_order ?? 999} onChange={(e) => setEdit({ ...edit, sort_order: Number(e.target.value) })} /></label>
+            <Field label="Poradie"><input type="number" inputMode="numeric" className="input" value={edit.sort_order ?? 999} onChange={(e) => setEdit({ ...edit, sort_order: Number(e.target.value) })} /></Field>
           </div>
-          <label className="flex items-center gap-2 text-sm">
+          <label className="check">
             <input type="checkbox" checked={edit.active ?? true} onChange={(e) => setEdit({ ...edit, active: e.target.checked })} />
             Aktívna (ponúka sa pri pohyboch)
           </label>
-          <div className="flex items-center gap-3">
-            <span className="relative px-2 py-1 rounded border-2 font-semibold text-sm min-w-24 min-h-12 flex items-center" style={flavorStyle({ color_bg: edit.color_bg ?? null, color_text: edit.color_text ?? null, color_border: edit.color_border ?? null })}>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="relative px-3 py-1 rounded-[var(--ctl-r)] border-2 font-semibold text-sm min-w-24 min-h-12 flex items-center" style={{ ...flavorStyle({ color_bg: edit.color_bg ?? null, color_text: edit.color_text ?? null, color_border: edit.color_border ?? null }), textShadow: 'none' }}>
               {edit.label || edit.name || 'Náhľad'}
               <Photo kind="flavor-photos" path={edit.photo_path} alt="" className="ml-2 h-10 w-auto object-contain" />
             </span>
@@ -305,33 +303,21 @@ function FlavorAdmin({ flavors, onChanged }: { flavors: Flavor[]; onChanged: () 
               />
             ) : <span className="text-xs muted">Logo môžeš nahrať po uložení príchute.</span>}
           </div>
-          {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-          <div className="flex gap-2">
-            <button onClick={save} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)]">Uložiť</button>
-            <button onClick={() => { setEdit(null); setError(null) }} className="h-11 px-4 rounded-lg border line">Zrušiť</button>
+          <ErrorText>{error}</ErrorText>
+          <div className="form-actions">
+            <button onClick={save} className="btn btn-primary">Uložiť</button>
+            <button onClick={() => { setEdit(null); setError(null) }} className="btn btn-quiet">Zrušiť</button>
           </div>
         </div>
-      ) : (
-        <button onClick={() => setEdit({ active: true, sort_order: 999 })} className="mt-3 h-10 px-4 rounded-lg border line text-sm">+ Nová príchuť</button>
       )}
-    </Card>
+    </Section>
   )
 }
 
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="grid gap-1 text-sm">
-      <span className="muted">{label}</span>
-      <input type="color" className="w-full h-10 rounded-lg border line bg-transparent" value={value} onChange={(e) => onChange(e.target.value)} />
-    </label>
-  )
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="card p-4 min-w-0">
-      <h2 className="display text-xl font-bold mb-2">{title}</h2>
-      {children}
-    </div>
+    <Field label={label}>
+      <input type="color" className="input !p-1" value={value} onChange={(e) => onChange(e.target.value)} />
+    </Field>
   )
 }

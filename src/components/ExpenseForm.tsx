@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
+import { Camera, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Chips, ErrorText, Field } from './ui'
 import { type DocType, type Expense, DOC_LABEL, DOC_TYPES } from '../lib/finance'
 import { type DriveFile, shrinkImage, uploadReceipt } from '../lib/receipt'
 import { ReceiptViewer } from './ReceiptViewer'
@@ -120,66 +122,54 @@ export function ExpenseForm({ expense, fixedEventId, defaultDay, onDone }: {
     else onDone(true)
   }
 
-  const input = 'w-full h-11 px-3 rounded-lg border line bg-transparent'
   return (
-    <div className="grid gap-4">
+    <div className="form">
       {saving && <BusyOverlay title={saving} progress={progress} />}
-      <label className="grid gap-1 text-sm">
-        <span className="muted">Doklad (fotka alebo PDF){expense?.drive_file_url ? ' – nahradí existujúci' : ''}</span>
-        <input
-          type="file"
-          accept="image/*,application/pdf"
-          className="text-sm file:mr-3 file:h-10 file:px-4 file:rounded-lg file:border-0 file:bg-[var(--color-ink)] file:text-white file:font-semibold"
-          onChange={(e) => pick(e.target.files?.[0] ?? null)}
-        />
-      </label>
+      <div className="field">
+        <span className="field-label">Doklad (fotka alebo PDF){expense?.drive_file_url ? ' – nahradí existujúci' : ''}</span>
+        <label className="btn justify-start">
+          <Camera aria-hidden />
+          <span className="truncate font-medium">{file ? file.name : expense?.drive_file_url ? 'Vybrať nový doklad' : 'Odfotiť alebo vybrať doklad'}</span>
+          <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => pick(e.target.files?.[0] ?? null)} />
+        </label>
+      </div>
 
       <ReceiptViewer localUrl={preview} isPdf={file?.type === 'application/pdf'} driveUrl={file ? null : expense?.drive_file_url ?? null} />
 
-      <div className="flex flex-wrap gap-1">
-        {DOC_TYPES.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setDocType(t)}
-            className={'h-9 px-3 rounded-lg border line text-sm ' + (docType === t ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-          >
-            {DOC_LABEL[t]}
-          </button>
-        ))}
+      <div className="field">
+        <span className="field-label">Typ dokladu</span>
+        <Chips options={DOC_TYPES.map((t) => [t, DOC_LABEL[t]] as const)} isOn={(t) => docType === t} onPick={setDocType} />
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="grid gap-1 text-sm"><span className="muted">Suma €</span>
-          <input type="text" inputMode="decimal" className={input + ' font-semibold'} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" /></label>
-        <label className="grid gap-1 text-sm"><span className="muted">Dátum</span>
-          <input type="date" className={input} value={day} onChange={(e) => setDay(e.target.value)} /></label>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Suma €">
+          <input type="text" inputMode="decimal" className="input font-semibold" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" />
+        </Field>
+        <Field label="Dátum"><input type="date" className="input" value={day} onChange={(e) => setDay(e.target.value)} /></Field>
       </div>
-      <label className="grid gap-1 text-sm"><span className="muted">Obchod / popis (krátko)</span>
-        <input className={input} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="napr. Shell tankovanie" /></label>
+      <Field label="Obchod / popis (krátko)">
+        <input className="input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="napr. Shell tankovanie" />
+      </Field>
 
       {!fixedEventId && (
-        <label className="grid gap-1 text-sm"><span className="muted">Event</span>
-          <select className={input} value={eventId} onChange={(e) => setEventId(e.target.value)}>
+        <Field label="Event">
+          <select className="input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
             <option value="">— bez eventu —</option>
             {events.map((e) => <option key={e.id} value={e.id}>{fmtRange(e)} · {e.title}</option>)}
-          </select></label>
+          </select>
+        </Field>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <label className="grid gap-1 text-sm"><span className="muted">Zaplatil</span>
-          <input className={input} value={paidBy} onChange={(e) => setPaidBy(e.target.value)} /></label>
-        <label className="grid gap-1 text-sm"><span className="muted">Kontrola</span>
-          <input className={input} value={control} onChange={(e) => setControl(e.target.value)} /></label>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Zaplatil"><input className="input" value={paidBy} onChange={(e) => setPaidBy(e.target.value)} /></Field>
+        <Field label="Kontrola"><input className="input" value={control} onChange={(e) => setControl(e.target.value)} /></Field>
       </div>
 
-      {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
-      <div className="flex gap-2">
-        <button onClick={save} disabled={!!saving} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-60">
-          Uložiť
-        </button>
-        <button onClick={() => onDone(false)} className="h-11 px-4 rounded-lg border line">Zrušiť</button>
-        {expense && <button onClick={remove} className="h-11 px-3 ml-auto text-sm text-[var(--color-signal)]">Zmazať</button>}
+      <ErrorText>{error}</ErrorText>
+      <div className="form-actions">
+        <button onClick={save} disabled={!!saving} className="btn btn-primary">Uložiť</button>
+        <button onClick={() => onDone(false)} className="btn btn-quiet">Zrušiť</button>
+        {expense && <button onClick={remove} className="btn btn-danger ml-auto"><Trash2 aria-hidden />Zmazať</button>}
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Copy, Eye, Plus, Share2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Empty, Section } from './ui'
 import { addDays, endDay, fmtDay, type EventRow } from '../lib/events'
 
 type Token = { id: string; token: string; expires_at: string | null; created_at: string }
@@ -64,33 +66,30 @@ export function BriefShare({ ev }: { ev: Pick<EventRow, 'id' | 'start_date' | 'e
   }
 
   return (
-    <div className="card p-4 min-w-0">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="display text-xl font-bold">Pošli vodičovi</h2>
-        <button onClick={create} disabled={busy} className="h-9 px-3 rounded-lg font-semibold text-white bg-[var(--color-signal)] text-sm disabled:opacity-60">
-          + Nový odkaz
-        </button>
-      </div>
-      <p className="text-xs muted mb-2">Verejný odkaz bez prihlásenia a bez financií. Vodič si ho môže stiahnuť ako PDF.</p>
+    <Section
+      title="Pošli vodičovi"
+      sub="Verejný odkaz bez prihlásenia a bez financií. Vodič si ho môže uložiť ako PDF."
+      action={<button onClick={create} disabled={busy} className="btn btn-sm"><Plus aria-hidden />Odkaz</button>}
+    >
       {tokens.length === 0 ? (
-        <p className="muted text-sm">Žiadny platný odkaz.</p>
+        <Empty>Žiadny platný odkaz.</Empty>
       ) : (
         <ul className="grid gap-2">
           {tokens.map((t) => (
-            <li key={t.id} className="rounded-lg border line p-2 text-sm">
-              <p className="break-all text-xs">{link(t)}</p>
+            <li key={t.id} className="rounded-[var(--ctl-r)] bg-[var(--fill)] p-3 text-sm">
+              <p className="break-all text-xs font-mono">{link(t)}</p>
               <p className="muted text-xs mt-1">platí do {t.expires_at ? fmtDay(t.expires_at.slice(0, 10)) : '–'}</p>
-              <div className="flex flex-wrap gap-1 mt-2">
-                <button onClick={() => share(t)} className="h-9 px-3 rounded-lg border line font-medium">Poslať</button>
-                <button onClick={() => copy(t)} className="h-9 px-3 rounded-lg border line">Kopírovať</button>
-                <a href={link(t)} target="_blank" rel="noreferrer" className="h-9 px-3 rounded-lg border line grid place-items-center">Náhľad / PDF</a>
-                <button onClick={() => revoke(t)} className="h-9 px-3 ml-auto text-[var(--color-signal)]">Zrušiť</button>
+              <div className="flex flex-wrap gap-1.5 mt-2.5">
+                <button onClick={() => share(t)} className="btn btn-sm btn-primary"><Share2 aria-hidden />Poslať</button>
+                <button onClick={() => copy(t)} className="btn btn-sm"><Copy aria-hidden />Kopírovať</button>
+                <a href={link(t)} target="_blank" rel="noreferrer" className="btn btn-sm"><Eye aria-hidden />Náhľad</a>
+                <button onClick={() => revoke(t)} className="btn btn-sm btn-danger ml-auto">Zrušiť</button>
               </div>
             </li>
           ))}
         </ul>
       )}
       {msg && <p className="text-sm mt-2 break-all">{msg}</p>}
-    </div>
+    </Section>
   )
 }

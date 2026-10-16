@@ -1,4 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import { Check, Pencil, Plus } from 'lucide-react'
+import { Badge, Chips, Empty, ErrorText, Section } from './ui'
 import { supabase } from '../lib/supabase'
 import { type Payout, TAX_RATE, withTax } from '../lib/finance'
 import { eur } from '../lib/events'
@@ -91,52 +93,43 @@ export function EventDrivers({ eventId, isAdmin, onChanged }: { eventId: string;
   const onEvent = evDrivers.map((x) => byId.get(x.driver_id)).filter(Boolean) as Driver[]
 
   return (
-    <Card
+    <Section
       title="Vodiči"
-      right={isAdmin && <button onClick={() => setEdit(!edit)} className="h-9 px-3 rounded-lg border line text-sm font-medium">{edit ? 'Hotovo' : 'Upraviť'}</button>}
+      action={isAdmin && <button onClick={() => setEdit(!edit)} className={'btn btn-sm ' + (edit ? 'btn-primary' : '')}>{edit ? <><Check aria-hidden />Hotovo</> : <><Pencil aria-hidden />Upraviť</>}</button>}
     >
-      {error && <p className="text-[var(--color-signal)] text-sm mb-2">{error}</p>}
+      <ErrorText>{error}</ErrorText>
 
       {edit && (
-        <div className="mb-3">
-          <div className="flex flex-wrap gap-1">
-            {drivers.filter((d) => d.active || evDrivers.some((x) => x.driver_id === d.id)).map((d) => {
-              const on = evDrivers.some((x) => x.driver_id === d.id)
-              return (
-                <button
-                  key={d.id}
-                  onClick={() => toggle(d)}
-                  className={'h-9 px-3 rounded-lg border line text-sm ' + (on ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-                >
-                  {d.name}
-                </button>
-              )
-            })}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <input className="flex-1 min-w-0 h-9 px-3 rounded-lg border line bg-transparent text-sm" placeholder="Nový vodič – meno" value={newName} onChange={(e) => setNewName(e.target.value)} />
-            <button onClick={addDriver} disabled={!newName.trim()} className="h-9 px-3 rounded-lg border line text-sm disabled:opacity-50">Pridať</button>
+        <div className="mb-3 grid gap-2">
+          <Chips
+            options={drivers.filter((d) => d.active || evDrivers.some((x) => x.driver_id === d.id)).map((d) => [d.id, d.name] as const)}
+            isOn={(id) => evDrivers.some((x) => x.driver_id === id)}
+            onPick={(id) => { const d = byId.get(id); if (d) toggle(d) }}
+          />
+          <div className="flex gap-2">
+            <input className="input" placeholder="Nový vodič – meno" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <button onClick={addDriver} disabled={!newName.trim()} className="btn"><Plus aria-hidden />Pridať</button>
           </div>
         </div>
       )}
 
       {onEvent.length === 0 ? (
-        <p className="muted text-sm">Žiadni.</p>
+        <Empty>Žiadni.</Empty>
       ) : (
-        <ul className="divide-y line text-sm">
+        <ul className="list text-sm">
           {onEvent.map((d) => {
             const p = payoutOf(d.id)
             return (
-              <li key={d.id} className="py-2 flex items-center gap-2 flex-wrap">
+              <li key={d.id} className="row flex-wrap">
                 <span className="font-semibold flex-1 min-w-24">{d.name}{d.is_me && <span className="muted font-normal"> · ja</span>}</span>
                 {isAdmin && !d.is_me && (
                   edit ? (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-2">
                       <input
                         type="text"
                         inputMode="decimal"
                         placeholder="Výplata €"
-                        className={'w-24 h-9 px-2 rounded-lg border bg-transparent text-right ' + (p ? 'line' : 'border-[var(--color-signal)]')}
+                        className={'input !w-28 !h-10 text-right ' + (p ? '' : '!border-[var(--danger)]')}
                         value={amounts[d.id] ?? ''}
                         onChange={(e) => setAmounts((a) => ({ ...a, [d.id]: e.target.value }))}
                         onBlur={() => savePayout(d.id)}
@@ -145,16 +138,13 @@ export function EventDrivers({ eventId, isAdmin, onChanged }: { eventId: string;
                     </span>
                   ) : p ? (
                     <>
-                      <span className="tabular-nums">{eur(Number(p.amount))} <span className="muted">+ {Math.round(Number(p.tax_rate) * 100)} % = </span><b>{eur(withTax(p))}</b></span>
-                      <button
-                        onClick={() => togglePaid(p)}
-                        className={'h-8 px-2 rounded-lg text-xs font-semibold border ' + (p.paid ? 'border-green-700 text-green-700 dark:border-green-400 dark:text-green-400' : 'border-[var(--color-signal)] text-[var(--color-signal)]')}
-                      >
-                        {p.paid ? 'Vyplatené' : 'Nevyplatené'}
+                      <span className="num">{eur(Number(p.amount))} <span className="muted">+ {Math.round(Number(p.tax_rate) * 100)} % =</span> <b>{eur(withTax(p))}</b></span>
+                      <button onClick={() => togglePaid(p)} className={'badge ' + (p.paid ? 'badge-ok' : 'badge-danger') + ' !h-8 !px-2.5'} title="Prepnúť vyplatené / nevyplatené">
+                        {p.paid ? <Check className="w-3.5 h-3.5" aria-hidden /> : null}{p.paid ? 'Vyplatené' : 'Nevyplatené'}
                       </button>
                     </>
                   ) : (
-                    <span className="text-[var(--color-signal)] text-xs font-semibold">chýba výplata</span>
+                    <Badge tone="danger">chýba výplata</Badge>
                   )
                 )}
               </li>
@@ -162,18 +152,6 @@ export function EventDrivers({ eventId, isAdmin, onChanged }: { eventId: string;
           })}
         </ul>
       )}
-    </Card>
-  )
-}
-
-function Card({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="card p-4 min-w-0">
-      <div className="flex items-baseline justify-between mb-2">
-        <h2 className="display text-xl font-bold">{title}</h2>
-        {right}
-      </div>
-      {children}
-    </div>
+    </Section>
   )
 }

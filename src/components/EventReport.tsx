@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import { CircleAlert, CircleCheck, Star } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { ErrorText, Field, Section, Seg } from './ui'
 import type { EventRow } from '../lib/events'
 
 type Line = {
@@ -104,83 +106,77 @@ export function EventReport({ ev, cartons, onChanged }: {
     { ok: f.rating > 0, text: f.rating > 0 ? `Hodnotenie: ${f.rating}/5` : 'Hodnotenie: chýba' },
   ]
 
-  const input = 'w-full h-11 px-3 rounded-lg border line bg-transparent'
   return (
-    <div className="card p-4 min-w-0">
-      <h2 className="display text-xl font-bold mb-2">Report po evente</h2>
-
-      <ul className="grid gap-1 text-sm mb-4">
+    <Section title="Report po evente">
+      <ul className="grid gap-1.5 text-sm mb-5">
         {checks.map((c) => (
-          <li key={c.text} className="flex gap-2"><span className={c.ok ? 'text-green-700 dark:text-green-400' : 'text-[var(--color-amber)]'}>{c.ok ? '✓' : '⚠'}</span><span>{c.text}</span></li>
+          <li key={c.text} className="flex items-start gap-2">
+            {c.ok ? <CircleCheck className="w-4.5 h-4.5 mt-px shrink-0 text-[var(--ok)]" aria-hidden /> : <CircleAlert className="w-4.5 h-4.5 mt-px shrink-0 text-[var(--warn)]" aria-hidden />}
+            <span>{c.text}</span>
+          </li>
         ))}
       </ul>
 
       {lines.length > 0 && (
-        <div className="mb-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider muted mb-1">Technika – vrátená?</h3>
-          <ul className="divide-y line text-sm">
+        <div className="mb-5">
+          <h3 className="eyebrow mb-1">Technika – vrátená?</h3>
+          <ul className="list text-sm">
             {lines.map((l) => (
-              <li key={l.equipment_id} className="py-2">
+              <li key={l.equipment_id} className="py-2.5 grid gap-2">
                 <p className="font-medium">{l.quantity}× {l.equipment?.name}</p>
-                <div className="flex gap-1 mt-1">
-                  {([['ok', 'Vrátené ✓'], ['broken', 'Pokazené'], ['not_returned', 'Nevrátené']] as const).map(([k, label]) => {
-                    const on = k === 'ok' ? l.returned_confirmed && l.issue === 'none' : l.issue === k
-                    return (
-                      <button
-                        key={k}
-                        onClick={() => mark(l, k)}
-                        className={'h-9 px-3 rounded-lg border text-xs font-semibold ' + (on ? (k === 'ok' ? 'bg-green-700 border-green-700 text-white' : 'bg-[var(--color-signal)] border-[var(--color-signal)] text-white') : 'line')}
-                      >
-                        {label}
-                      </button>
-                    )
-                  })}
-                </div>
+                <Seg
+                  options={[['ok', 'Vrátené'], ['broken', 'Pokazené'], ['not_returned', 'Nevrátené']] as const}
+                  value={(l.returned_confirmed && l.issue === 'none' ? 'ok' : l.issue === 'none' ? '' : l.issue) as Mark}
+                  onChange={(k) => mark(l, k)}
+                />
               </li>
             ))}
           </ul>
-          <p className="text-xs muted mt-1">Pokazené a nevrátené kusy sa zapíšu aj do <Link to="/technika" className="text-[var(--color-sky)]">Techniky</Link> s odkazom na tento event.</p>
+          <p className="text-xs muted mt-2">Pokazené a nevrátené kusy sa zapíšu aj do <Link to="/technika" className="link">Techniky</Link> s odkazom na tento event.</p>
         </div>
       )}
 
-      <div className="grid gap-4">
-        <label className="grid gap-1 text-sm"><span className="muted">Diváci</span>
-          <input type="number" inputMode="numeric" min={0} className={input} value={f.spectators} onChange={(e) => setF({ ...f, spectators: e.target.value })} /></label>
+      <div className="form">
+        <div className="grid grid-cols-2 gap-3 items-end">
+          <Field label="Diváci">
+            <input type="number" inputMode="numeric" min={0} className="input" value={f.spectators} onChange={(e) => setF({ ...f, spectators: e.target.value })} />
+          </Field>
+          <label className="check pb-1.5">
+            <input type="checkbox" checked={f.played} onChange={(e) => setF({ ...f, played: e.target.checked })} />
+            Hral som ako DJ
+          </label>
+        </div>
 
-        <div className="grid gap-1 text-sm">
-          <span className="muted">Hodnotenie</span>
+        <div className="field">
+          <span className="field-label">Hodnotenie</span>
           <div className="flex gap-1" role="radiogroup" aria-label="Hodnotenie">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
                 type="button"
                 onClick={() => setF({ ...f, rating: f.rating === n ? 0 : n })}
-                className={'w-12 h-12 text-3xl leading-none ' + (n <= f.rating ? 'text-[var(--color-amber)]' : 'text-[var(--line)]')}
+                className={'w-11 h-11 grid place-items-center ' + (n <= f.rating ? 'text-[var(--color-amber)]' : 'muted opacity-40')}
                 aria-label={`${n} z 5`}
               >
-                ★
+                <Star className={'w-8 h-8 ' + (n <= f.rating ? 'fill-current' : '')} aria-hidden />
               </button>
             ))}
           </div>
         </div>
 
-        <label className="grid gap-1 text-sm"><span className="muted">Ako to dopadlo (text)</span>
-          <textarea rows={4} className={input + ' h-auto py-2'} value={f.report} onChange={(e) => setF({ ...f, report: e.target.value })} /></label>
+        <Field label="Ako to dopadlo">
+          <textarea rows={4} className="input" value={f.report} onChange={(e) => setF({ ...f, report: e.target.value })} />
+        </Field>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={f.played} onChange={(e) => setF({ ...f, played: e.target.checked })} />
-          Hral som ako DJ
-        </label>
-
-        {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
+        <ErrorText>{error}</ErrorText>
         {msg && <p className="text-sm">{msg}</p>}
-        <div className="flex flex-wrap gap-2">
-          <button onClick={() => save(false)} disabled={busy} className="h-11 px-5 rounded-lg border line font-semibold disabled:opacity-60">Uložiť</button>
+        <div className="form-actions">
+          <button onClick={() => save(false)} disabled={busy} className="btn">Uložiť</button>
           {ev.status !== 'done' && (
-            <button onClick={() => save(true)} disabled={busy} className="h-11 px-5 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-60">Uložiť a uzavrieť event</button>
+            <button onClick={() => save(true)} disabled={busy} className="btn btn-primary">Uložiť a uzavrieť event</button>
           )}
         </div>
       </div>
-    </div>
+    </Section>
   )
 }

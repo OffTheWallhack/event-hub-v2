@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { ChevronRight, Palette } from 'lucide-react'
 import { supabase, type Profile, type Role } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { DriveBox } from '../components/DriveBox'
 import { BackupBox } from '../components/BackupBox'
-import { ThemePicker } from '../components/ThemePicker'
+import { SyncBox } from '../components/SyncBox'
+import { Badge, ErrorText, PageHeader, Section, Seg } from '../components/ui'
 
-const ROLE_LABEL: Record<Role, string> = { pending: 'Čaká', driver: 'Vodič (čítanie)', admin: 'Admin' }
+const ROLE_LABEL: Record<Role, string> = { pending: 'Čaká', driver: 'Vodič', admin: 'Admin' }
+const ROLES = (['pending', 'driver', 'admin'] as Role[]).map((r) => [r, ROLE_LABEL[r]] as const)
 
 export function Users() {
   const { profile: me } = useAuth()
@@ -31,47 +35,53 @@ export function Users() {
   const pending = rows.filter((r) => r.role === 'pending').length
 
   return (
-    <section>
-      <h1 className="display text-4xl font-bold">Používatelia</h1>
-      <p className="muted mt-1">
-        {pending > 0 ? `${pending} čaká na schválenie.` : 'Nikto nečaká na schválenie.'}
-      </p>
-      {error && <p className="mt-3 text-[var(--color-signal)]">{error}</p>}
-      <ul className="mt-4 grid gap-2">
-        {rows.map((r) => {
-          const isMe = r.user_id === me?.user_id
-          return (
-            <li key={r.user_id} className="card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{r.name ?? r.email}</p>
-                <p className="text-sm muted truncate">{r.email}</p>
-              </div>
-              {isMe ? (
-                <span className="text-sm muted">Ty · {ROLE_LABEL[r.role]}</span>
-              ) : (
-                <div className="flex gap-1">
-                  {(['pending', 'driver', 'admin'] as Role[]).map((role) => (
-                    <button
-                      key={role}
-                      disabled={saving === r.user_id}
-                      onClick={() => setRole(r.user_id, role)}
-                      className={
-                        'px-3 h-9 rounded-lg text-sm border line ' +
-                        (r.role === role ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)]' : '')
-                      }
-                    >
-                      {ROLE_LABEL[role]}
-                    </button>
-                  ))}
+    <div className="page">
+      <PageHeader title="Nastavenia" />
+
+      <Section
+        title="Používatelia"
+        sub="Vodič vidí eventy, techniku a kartóny, nič nemení. Financie vidí len admin."
+        action={pending > 0 && <Badge tone="warn">{pending} čaká</Badge>}
+      >
+        <ErrorText>{error}</ErrorText>
+        <ul className="list">
+          {rows.map((r) => {
+            const isMe = r.user_id === me?.user_id
+            return (
+              <li key={r.user_id} className="py-3 grid gap-2 sm:flex sm:items-center sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{r.name ?? r.email}{isMe && <span className="muted font-normal"> · ty</span>}</p>
+                  <p className="text-sm muted truncate">{r.email}</p>
                 </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-      <ThemePicker />
+                {isMe ? (
+                  <Badge className="justify-self-start">{ROLE_LABEL[r.role]}</Badge>
+                ) : (
+                  <Seg
+                    className={'sm:w-64 ' + (saving === r.user_id ? 'opacity-50' : '')}
+                    disabled={saving === r.user_id}
+                    options={ROLES}
+                    value={r.role}
+                    onChange={(role) => setRole(r.user_id, role)}
+                  />
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      </Section>
+
+      <Link to="/vzhlad" className="card section flex items-center gap-3">
+        <span className="w-9 h-9 rounded-[var(--ctl-r)] grid place-items-center bg-[var(--fill-2)]"><Palette className="w-5 h-5" aria-hidden /></span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold">Vzhľad a témy</span>
+          <span className="block text-sm muted">Predvoľby, farby, písmo, pozadie</span>
+        </span>
+        <ChevronRight className="w-5 h-5 muted" aria-hidden />
+      </Link>
+
+      <SyncBox isAdmin onSynced={() => {}} />
       <DriveBox />
       <BackupBox />
-    </section>
+    </div>
   )
 }

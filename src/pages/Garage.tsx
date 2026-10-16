@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { Car, Plus, Wrench, X } from 'lucide-react'
+import { Empty, ErrorText, Field, PageHeader, Section } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
@@ -39,63 +41,60 @@ export function Garage() {
   const refresh = () => setReload((r) => r + 1)
 
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <h1 className="display text-4xl font-bold">Garáž</h1>
+    <div className="page">
+      <PageHeader title="Garáž" />
 
-      <div className="flex flex-wrap gap-1">
-        {[...vehicles.map((v) => ({ id: v.id, name: v.name })), { id: GARAGE, name: '🔧 Garáž' }].map((v) => (
-          <button
-            key={v.id}
-            onClick={() => setSel(v.id)}
-            className={'h-10 px-3 rounded-lg border line text-sm ' + (sel === v.id ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-          >
-            {v.name}{open[v.id] ? <span className="ml-1 text-xs opacity-70">{open[v.id]}</span> : null}
+      <div className="chips-scroll">
+        {[...vehicles.map((v) => ({ id: v.id, name: v.name, garage: false })), { id: GARAGE, name: 'Garáž', garage: true }].map((v) => (
+          <button key={v.id} type="button" onClick={() => setSel(v.id)} aria-pressed={sel === v.id} className="chip">
+            {v.garage ? <Wrench className="w-4 h-4" aria-hidden /> : <Car className="w-4 h-4" aria-hidden />}
+            {v.name}{open[v.id] ? <span className="count">{open[v.id]}</span> : null}
           </button>
         ))}
       </div>
 
       {sel === GARAGE ? (
-        <div className="card p-4">
-          <h2 className="display text-xl font-bold mb-2">Úlohy v garáži</h2>
+        <Section title="Úlohy v garáži">
           <TodoList vehicles={vehicles} isAdmin={isAdmin} scope="garage" onChanged={refresh} />
-        </div>
+        </Section>
       ) : vehicle ? (
         <>
-          <div className="card p-4 min-w-0">
+          <Section>
             <Photo
               kind="vehicle-photos"
               path={vehicle.custom_photo_path}
               alt={vehicle.name}
-              className="w-full max-h-52 object-contain rounded-xl mb-3"
+              className="w-full max-h-56 object-contain rounded-[var(--ctl-r)] mb-3"
             />
-            <h2 className="display text-2xl font-bold">{vehicle.name}</h2>
-            {vehicle.full_name && <p className="text-sm muted">{vehicle.full_name}</p>}
-            {isAdmin && (
-              <div className="mt-2">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="section-title !text-2xl">{vehicle.name}</h2>
+                {vehicle.full_name && <p className="text-sm muted">{vehicle.full_name}</p>}
+              </div>
+              {isAdmin && (
                 <PhotoUpload
                   kind="vehicle-photos"
                   id={vehicle.id}
-                  label={vehicle.custom_photo_path ? 'Zmeniť fotku auta' : 'Nahrať fotku auta'}
+                  label={vehicle.custom_photo_path ? 'Zmeniť fotku' : 'Nahrať fotku'}
                   onUploaded={async (path) => {
                     const { error } = await supabase.from('vehicles').update({ custom_photo_path: path }).eq('id', vehicle.id)
                     if (error) throw new Error(error.message)
                     refresh()
                   }}
                 />
-              </div>
-            )}
+              )}
+            </div>
             <Notes key={vehicle.id} v={vehicle} isAdmin={isAdmin} />
-          </div>
+          </Section>
 
-          <div className="card p-4">
-            <h2 className="display text-xl font-bold mb-2">Úlohy</h2>
+          <Section title="Úlohy">
             <TodoList vehicles={vehicles} isAdmin={isAdmin} scope="vehicle" vehicleId={vehicle.id} onChanged={refresh} />
-          </div>
+          </Section>
 
           <Services key={vehicle.id} vehicleId={vehicle.id} isAdmin={isAdmin} />
         </>
       ) : null}
-    </section>
+    </div>
   )
 }
 
@@ -107,12 +106,11 @@ function Notes({ v, isAdmin }: { v: Vehicle; isAdmin: boolean }) {
     const { error } = await supabase.from('vehicles').update({ equipment_notes: text.trim() || null }).eq('id', v.id)
     if (!error) { v.equipment_notes = text.trim() || null; setSaved(true); setTimeout(() => setSaved(false), 1500) }
   }
-  if (!isAdmin) return text ? <p className="text-sm whitespace-pre-wrap mt-3">{text}</p> : null
+  if (!isAdmin) return text ? <p className="text-sm whitespace-pre-wrap mt-4">{text}</p> : null
   return (
-    <label className="grid gap-1 mt-3 text-sm">
-      <span className="muted">Poznámky k autu (výbava, rozmery, CCS…) {saved && <b className="text-green-700">· uložené</b>}</span>
-      <textarea rows={5} className="w-full p-2 rounded-lg border line bg-transparent text-sm" value={text} onChange={(e) => setText(e.target.value)} onBlur={save} />
-    </label>
+    <Field className="mt-4" label={<>Poznámky k autu (výbava, rozmery, CCS…) {saved && <b className="text-[var(--ok)]">· uložené</b>}</>}>
+      <textarea rows={5} className="input" value={text} onChange={(e) => setText(e.target.value)} onBlur={save} />
+    </Field>
   )
 }
 
@@ -142,33 +140,31 @@ function Services({ vehicleId, isAdmin }: { vehicleId: string; isAdmin: boolean 
     setReload((r) => r + 1)
   }
 
-  const input = 'h-10 px-3 rounded-lg border line bg-transparent text-sm'
   return (
-    <div className="card p-4 min-w-0">
-      <h2 className="display text-xl font-bold mb-2">Servisy a opravy</h2>
+    <Section title="Servisy a opravy">
       {isAdmin && (
         <div className="grid gap-2 mb-3 min-w-0">
-          <input className={input + ' w-full min-w-0'} placeholder="Čo sa robilo…" value={desc} onChange={(e) => setDesc(e.target.value)} />
+          <input className="input" placeholder="Čo sa robilo…" value={desc} onChange={(e) => setDesc(e.target.value)} />
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-            <input type="date" className={input + ' min-w-0'} value={date} onChange={(e) => setDate(e.target.value)} />
-            <button onClick={add} disabled={!desc.trim()} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-50">Pridať</button>
+            <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
+            <button onClick={add} disabled={!desc.trim()} className="btn btn-primary"><Plus aria-hidden />Pridať</button>
           </div>
-          {error && <p className="text-[var(--color-signal)] text-sm">{error}</p>}
+          <ErrorText>{error}</ErrorText>
         </div>
       )}
       {rows.length === 0 ? (
-        <p className="muted text-sm">Zatiaľ žiadne záznamy.</p>
+        <Empty>Zatiaľ žiadne záznamy.</Empty>
       ) : (
-        <ul className="divide-y line text-sm">
+        <ul className="list text-sm">
           {rows.map((s) => (
-            <li key={s.id} className="py-2 flex gap-2 items-baseline">
-              <span className="muted w-20 shrink-0 text-xs">{s.date ? fmtDay(s.date) : '–'}</span>
+            <li key={s.id} className="row !py-2">
+              <span className="muted w-20 shrink-0 text-xs num">{s.date ? fmtDay(s.date) : '–'}</span>
               <span className="flex-1 min-w-0 break-words">{s.description}</span>
-              {isAdmin && <button onClick={() => remove(s)} className="muted px-1" aria-label="Zmazať">×</button>}
+              {isAdmin && <button onClick={() => remove(s)} className="btn btn-sm btn-icon btn-quiet muted -mr-2" aria-label="Zmazať"><X aria-hidden /></button>}
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </Section>
   )
 }

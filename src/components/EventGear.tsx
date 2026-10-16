@@ -1,4 +1,6 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import { Car, Check, Minus, Pencil, Star } from 'lucide-react'
+import { Chips, Empty, ErrorText, Section } from './ui'
 import { supabase } from '../lib/supabase'
 import { type EqCategory, CATEGORIES, CATEGORY_LABEL, eqIcon, splitName } from '../lib/equipment'
 import { Photo } from './Photo'
@@ -105,60 +107,54 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
   })).filter((g) => g.items.length > 0)
   const totalPieces = evEq.reduce((s, e) => s + e.quantity, 0)
 
+  const editBtn = (on: boolean, toggle: () => void) => (
+    <button onClick={toggle} className={'btn btn-sm ' + (on ? 'btn-primary' : '')}>{on ? <><Check aria-hidden />Hotovo</> : <><Pencil aria-hidden />Upraviť</>}</button>
+  )
+
   return (
     <>
-      <Card
-        title="Vozidlá"
-        right={isAdmin && <button onClick={() => setEditVeh(!editVeh)} className="h-9 px-3 rounded-lg border line text-sm font-medium">{editVeh ? 'Hotovo' : 'Upraviť'}</button>}
-      >
-        {error && <p className="text-[var(--color-signal)] text-sm mb-2">{error}</p>}
+      <Section title="Vozidlá" action={isAdmin && editBtn(editVeh, () => setEditVeh(!editVeh))}>
+        <ErrorText>{error}</ErrorText>
         {editVeh ? (
           <>
-            <div className="flex flex-wrap gap-1">
-              {vehicles.map((v) => {
-                const on = evVeh.some((x) => x.vehicle_id === v.id)
-                return (
-                  <button
-                    key={v.id}
-                    onClick={() => toggleVehicle(v)}
-                    className={'h-10 px-3 rounded-lg border line text-sm ' + (on ? 'bg-[var(--color-ink)] text-white dark:bg-[var(--color-signal)] font-semibold' : '')}
-                  >
-                    {v.name}
-                  </button>
-                )
-              })}
-            </div>
+            <Chips
+              options={vehicles.map((v) => [v.id, v.name] as const)}
+              isOn={(id) => evVeh.some((x) => x.vehicle_id === id)}
+              onPick={(id) => { const v = vehicles.find((x) => x.id === id); if (v) toggleVehicle(v) }}
+            />
             <p className="text-xs muted mt-2">Výber auta pridá jeho sadu techniky. Odobratie auta techniku neodoberie.</p>
           </>
         ) : evVehNames.length === 0 ? (
-          <p className="muted text-sm">Žiadne.</p>
+          <Empty>Žiadne.</Empty>
         ) : (
-          <ul className="flex flex-wrap gap-2 text-sm">
+          <ul className="chips">
             {evVehNames.map((v) => (
-              <li key={v.id} className="px-2 py-1 rounded-lg border line flex items-center gap-1">
-                {isPrimary(v.id) ? <span title="Hlavné auto">★</span> : isAdmin && (
-                  <button onClick={() => makePrimary(v.id)} className="muted" title="Nastaviť ako hlavné">☆</button>
-                )}
+              <li key={v.id} className="chip !pl-2">
+                {isPrimary(v.id) ? (
+                  <Star className="w-4 h-4 fill-current text-[var(--color-amber)]" aria-label="Hlavné auto" />
+                ) : isAdmin ? (
+                  <button onClick={() => makePrimary(v.id)} className="muted" title="Nastaviť ako hlavné" aria-label="Nastaviť ako hlavné"><Star className="w-4 h-4" aria-hidden /></button>
+                ) : <Car className="w-4 h-4 muted" aria-hidden />}
                 <span className="font-semibold">{v.name}</span>
               </li>
             ))}
           </ul>
         )}
         {msg && <p className="text-sm mt-2">{msg}</p>}
-      </Card>
+      </Section>
 
-      <Card
-        title={`Technika${totalPieces ? ` · ${totalPieces} ks` : ''}`}
-        right={isAdmin && <button onClick={() => setEditEq(!editEq)} className="h-9 px-3 rounded-lg border line text-sm font-medium">{editEq ? 'Hotovo' : 'Upraviť'}</button>}
+      <Section
+        title={<>Technika{totalPieces ? <span className="muted font-normal"> · {totalPieces} ks</span> : ''}</>}
+        action={isAdmin && editBtn(editEq, () => setEditEq(!editEq))}
       >
         {groups.length === 0 ? (
-          <p className="muted text-sm">Žiadna.</p>
+          <Empty>Žiadna.</Empty>
         ) : (
           <div className="grid gap-4">
             {editEq && <p className="text-xs muted">Ťukni na kus = +1, mínus = −1. Číslo vpravo hore je počet na evente / koľko máme.</p>}
             {groups.map((g) => (
               <div key={g.cat}>
-                <h3 className="text-xs font-semibold uppercase tracking-wider muted mb-1.5">{CATEGORY_LABEL[g.cat]}</h3>
+                <h3 className="eyebrow mb-2">{CATEGORY_LABEL[g.cat]}</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {g.items.map((c) => {
                     const on = onEvent.get(c.id)
@@ -167,34 +163,34 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
                     return (
                       <div
                         key={c.id}
-                        className={'relative rounded-xl border-2 text-center select-none ' + (q > 0 ? 'border-[var(--color-signal)] bg-[color-mix(in_srgb,var(--color-signal)_10%,var(--card))]' : 'line ' + (editEq ? '' : 'opacity-60'))}
+                        className={'relative rounded-[var(--ctl-r)] border text-center select-none ' + (q > 0 ? 'border-[var(--color-signal)] bg-[color-mix(in_srgb,var(--color-signal)_8%,transparent)]' : 'line ' + (editEq ? '' : 'opacity-60'))}
                       >
                         <button
                           type="button"
                           disabled={!editEq}
                           onClick={() => setQty(c.id, q + 1)}
-                          className="w-full pt-3 pb-2 px-1 flex flex-col items-center gap-1"
+                          className="w-full pt-4 pb-2.5 px-1 flex flex-col items-center gap-1.5"
                         >
-                          <Photo kind="equipment-photos" path={c.photo_path} alt={c.name} className="w-12 h-12 object-cover rounded-lg" fallback={<span className="text-3xl leading-none">{eqIcon(c)}</span>} />
-                          <span className="text-[11px] font-semibold leading-tight line-clamp-2">{short}</span>
+                          <Photo kind="equipment-photos" path={c.photo_path} alt={c.name} className="w-12 h-12 object-cover rounded-[var(--ctl-r)]" fallback={<span className="text-3xl leading-none">{eqIcon(c)}</span>} />
+                          <span className="text-xs font-semibold leading-tight line-clamp-2">{short}</span>
                         </button>
-                        <span className={'absolute top-1 right-1 text-[10px] font-bold px-1 rounded ' + (q > 0 ? 'bg-[var(--color-signal)] text-white' : 'muted')}>
+                        <span className={'absolute top-1 right-1 badge !h-5 !px-1.5 !text-[10px] num ' + (q > 0 ? 'badge-accent' : '')}>
                           {q}/{c.quantity}
                         </span>
                         {on && on.issue !== 'none' && (
-                          <span className="block text-[10px] font-bold text-[var(--color-signal)] -mt-1 mb-1">{ISSUE_LABEL[on.issue]}</span>
+                          <span className="block text-[10px] font-bold text-[var(--danger)] -mt-1 mb-1.5">{ISSUE_LABEL[on.issue]}</span>
                         )}
                         {c.qty_broken > 0 && editEq && (
-                          <span className="block text-[10px] text-[var(--color-signal)] -mt-1 mb-1">{c.qty_broken} pokaz.</span>
+                          <span className="block text-[10px] text-[var(--danger)] -mt-1 mb-1.5">{c.qty_broken} pokaz.</span>
                         )}
                         {editEq && q > 0 && (
                           <button
                             type="button"
                             onClick={() => setQty(c.id, q - 1)}
-                            className="absolute top-1 left-1 w-7 h-7 rounded-full bg-[var(--color-ink)] text-white font-bold leading-none"
+                            className="absolute top-1 left-1 w-7 h-7 rounded-full grid place-items-center bg-[var(--fg)] text-[var(--bg)]"
                             aria-label="Menej"
                           >
-                            −
+                            <Minus className="w-4 h-4" aria-hidden />
                           </button>
                         )}
                       </div>
@@ -205,19 +201,7 @@ export function EventGear({ eventId, isAdmin }: { eventId: string; isAdmin: bool
             ))}
           </div>
         )}
-      </Card>
+      </Section>
     </>
-  )
-}
-
-function Card({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="card p-4 min-w-0">
-      <div className="flex items-baseline justify-between mb-2">
-        <h2 className="display text-xl font-bold">{title}</h2>
-        {right}
-      </div>
-      {children}
-    </div>
   )
 }

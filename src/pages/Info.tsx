@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ChevronDown, RefreshCw } from 'lucide-react'
+import { KV, PageHeader, Section, Stat } from '../components/ui'
 import { SUPABASE_URL, supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { CHANGELOG, NOT_YET } from '../lib/changelog'
@@ -6,7 +8,7 @@ import { CHANGELOG, NOT_YET } from '../lib/changelog'
 type State = 'ok' | 'warn' | 'bad' | 'wait'
 type Check = { key: string; label: string; state: State; detail: string }
 
-const COLOR: Record<State, string> = { ok: '#2e8b57', warn: 'var(--color-amber)', bad: 'var(--color-signal)', wait: '#8f99aa' }
+const COLOR: Record<State, string> = { ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--danger)', wait: 'var(--muted)' }
 const FUNCTIONS = [
   ['ics-sync', 'Synchronizácia Basecampu'],
   ['drive', 'Google Drive (nahrávanie)'],
@@ -116,42 +118,42 @@ export function Info() {
   const warn = checks.filter((c) => c.state === 'warn').length
 
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <h1 className="display text-4xl font-bold">Info</h1>
+    <div className="page">
+      <PageHeader title="Info" />
 
       {newer && (
-        <div className="card p-3 border-2 border-[var(--color-amber)] text-sm">
-          <b>K dispozícii je novšia verzia ({newer.version}, {newer.commit}).</b>{' '}
-          <button onClick={() => window.location.reload()} className="underline font-semibold text-[var(--color-sky)]">Obnoviť stránku</button>
+        <div className="notice text-sm">
+          <RefreshCw className="w-5 h-5 text-[var(--warn)] shrink-0" aria-hidden />
+          <p className="flex-1"><b>K dispozícii je novšia verzia ({newer.version}, {newer.commit}).</b></p>
+          <button onClick={() => window.location.reload()} className="btn btn-sm btn-primary">Obnoviť</button>
         </div>
       )}
 
-      <div className="card p-4">
-        <p className="text-[11px] uppercase tracking-wider font-semibold muted">Táto verzia</p>
-        <p className="display text-4xl font-bold leading-tight">v{__APP_VERSION__}</p>
-        <dl className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-1 text-sm mt-2">
-          <dt className="muted">Nasadené</dt><dd>{when(__APP_BUILT_AT__)} <span className="muted">({ago(__APP_BUILT_AT__)})</span></dd>
-          <dt className="muted">Zmena</dt><dd className="break-words">{__APP_COMMIT_MSG__ || '–'}</dd>
-          <dt className="muted">Commit</dt><dd className="font-mono text-xs">{__APP_COMMIT__}</dd>
-          <dt className="muted">Prihlásený</dt><dd>{profile?.email} · {profile?.role}</dd>
+      <Section>
+        <p className="eyebrow">Táto verzia</p>
+        <p className="page-title mt-1">v{__APP_VERSION__}</p>
+        <dl className="kv mt-4 text-sm">
+          <KV label="Nasadené">{when(__APP_BUILT_AT__)} <span className="muted">({ago(__APP_BUILT_AT__)})</span></KV>
+          <KV label="Zmena">{__APP_COMMIT_MSG__}</KV>
+          <KV label="Commit"><span className="font-mono text-xs">{__APP_COMMIT__}</span></KV>
+          <KV label="Prihlásený">{profile?.email} · {profile?.role}</KV>
         </dl>
-      </div>
+      </Section>
 
-      <div className="card p-4">
-        <div className="flex items-center gap-2 mb-2">
-          <h2 className="display text-xl font-bold flex-1">Stav služieb</h2>
-          <button onClick={run} disabled={running} className="h-9 px-3 rounded-lg border line text-sm font-medium disabled:opacity-60">{running ? 'Kontrolujem…' : 'Skontrolovať'}</button>
-        </div>
-        {checks.length > 0 && (
-          <p className="text-sm mb-2" style={{ color: bad ? COLOR.bad : warn ? COLOR.warn : COLOR.ok }}>
+      <Section
+        title="Stav služieb"
+        sub={checks.length > 0 ? (
+          <span style={{ color: bad ? COLOR.bad : warn ? COLOR.warn : COLOR.ok }}>
             <b>{bad ? `${bad} problém${bad > 1 ? 'y' : ''}` : warn ? `${warn} upozornenie` : 'Všetko beží'}</b>
             {checkedAt && <span className="muted"> · skontrolované {ago(checkedAt)}</span>}
-          </p>
-        )}
-        <ul className="divide-y line text-sm">
+          </span>
+        ) : undefined}
+        action={<button onClick={run} disabled={running} className="btn btn-sm"><RefreshCw className={running ? 'animate-spin' : ''} aria-hidden />{running ? 'Kontrolujem…' : 'Skontrolovať'}</button>}
+      >
+        <ul className="list text-sm">
           {checks.map((c) => (
-            <li key={c.key} className="py-2 flex gap-2">
-              <span className="mt-1.5 w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLOR[c.state] }} />
+            <li key={c.key} className="py-2.5 flex gap-3">
+              <span className="dot mt-1.5" style={{ background: COLOR[c.state] }} />
               <span className="min-w-0">
                 <span className="font-semibold">{c.label}</span>
                 <span className="block text-xs muted break-words">{c.detail}</span>
@@ -160,37 +162,33 @@ export function Info() {
           ))}
           {checks.length === 0 && <li className="py-2 muted">Kontrolujem…</li>}
         </ul>
-      </div>
+      </Section>
 
       {counts.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {counts.map((c) => (
-            <div key={c.label} className="card p-3">
-              <p className="text-[11px] muted leading-tight">{c.label}</p>
-              <p className="display text-2xl font-bold">{c.n}</p>
-            </div>
-          ))}
+        <div className="card section grid grid-cols-2 sm:grid-cols-5 gap-4">
+          {counts.map((c) => <Stat key={c.label} label={c.label} value={c.n} />)}
         </div>
       )}
 
-      <div className="card p-4">
-        <h2 className="display text-xl font-bold mb-2">Čo ešte nie je</h2>
+      <Section title="Čo ešte nie je">
         <ul className="grid gap-1 text-sm list-disc pl-5">{NOT_YET.map((t) => <li key={t}>{t}</li>)}</ul>
-      </div>
+      </Section>
 
-      <div className="card p-4">
-        <h2 className="display text-xl font-bold mb-2">Zoznam zmien</h2>
-        <div className="grid gap-2">
+      <Section title="Zoznam zmien">
+        <div className="list rounded-[var(--ctl-r)] border overflow-hidden">
           {CHANGELOG.map((e, i) => (
-            <details key={e.version} open={i < 2} className="rounded-lg border line px-3 py-2">
-              <summary className="cursor-pointer text-sm">
-                <b>v{e.version}</b> <span className="muted">· {e.date}</span> · {e.title}
+            <details key={e.version} open={i < 2} className="group">
+              <summary className="flex items-center gap-2 px-3 py-2.5 text-sm select-none">
+                <b className="num">v{e.version}</b>
+                <span className="flex-1 min-w-0 truncate">{e.title}</span>
+                <span className="muted text-xs shrink-0">{e.date}</span>
+                <ChevronDown className="w-4 h-4 muted shrink-0 transition-transform group-open:rotate-180" aria-hidden />
               </summary>
-              <ul className="mt-2 grid gap-1 text-sm list-disc pl-5">{e.items.map((t) => <li key={t}>{t}</li>)}</ul>
+              <ul className="px-3 pb-3 grid gap-1 text-sm list-disc pl-8">{e.items.map((t) => <li key={t}>{t}</li>)}</ul>
             </details>
           ))}
         </div>
-      </div>
-    </section>
+      </Section>
+    </div>
   )
 }

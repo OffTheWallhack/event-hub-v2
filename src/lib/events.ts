@@ -42,7 +42,7 @@ export const TYPE_COLOR: Record<EventType, string> = {
   servis: 'var(--color-sun)',
 }
 export const TYPE_TEXT: Record<EventType, string> = {
-  event_car: '#fff',
+  event_car: 'var(--on-accent, #fff)',
   support: '#1a1205',
   adhoc: '#fff',
   servis: '#1a1505',

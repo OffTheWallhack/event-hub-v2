@@ -1,6 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { BottomBar } from './BottomBar'
 import { TYPE_COLOR, addDays, startDay, type EventRow } from '../lib/events'
 
@@ -51,17 +52,17 @@ export function EventNavBar({ ev }: { ev: Pick<EventRow, 'id' | 'title' | 'start
   return (
     <BottomBar>
       <div className="flex items-center gap-2">
-        <button onClick={() => go(prev)} disabled={!prev} className="h-12 w-12 shrink-0 rounded-lg border line text-xl disabled:opacity-30" aria-label="Predošlý event">‹</button>
+        <button onClick={() => go(prev)} disabled={!prev} className="btn btn-icon shrink-0" aria-label="Predošlý event"><ChevronLeft aria-hidden /></button>
         <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
-          <ul className="flex items-end gap-2.5 w-max px-1 h-12">
+          <ul className="flex items-end gap-2.5 w-max px-1 h-11 pb-1">
             {groups.map((g, i) => {
               const month = i === 0 || g.day.slice(0, 7) !== groups[i - 1].day.slice(0, 7)
               const isCur = g.events.some((e) => e.id === ev.id)
               return (
                 <li key={g.day} className="flex items-end gap-1.5">
-                  {month && <span className="text-[9px] muted self-center -mr-1">{Number(g.day.slice(5, 7))}.</span>}
-                  <span className="flex items-end gap-[3px]">
-                    {isCur && <span className="absolute -mt-9 text-[9px] font-bold" style={{ transform: 'translateX(-2px)' }}>{Number(g.day.slice(8))}.</span>}
+                  {month && <span className="text-[10px] font-semibold muted self-center -mr-1">{Number(g.day.slice(5, 7))}.</span>}
+                  <span className="relative flex items-end gap-[3px]">
+                    {isCur && <span className="absolute bottom-full mb-0.5 left-1/2 -translate-x-1/2 text-[10px] font-bold leading-none whitespace-nowrap">{Number(g.day.slice(8))}.</span>}
                     {g.events.map((e) => {
                       const on = e.id === ev.id
                       return (
@@ -71,8 +72,8 @@ export function EventNavBar({ ev }: { ev: Pick<EventRow, 'id' | 'title' | 'start
                           onClick={() => go(e)}
                           title={`${Number(g.day.slice(8))}. ${e.title}`}
                           aria-label={e.title}
-                          className="w-2.5 rounded-sm"
-                          style={{ height: on ? 40 : 28, background: TYPE_COLOR[e.event_type], outline: on ? '2px solid var(--fg)' : 'none', outlineOffset: 1 }}
+                          className="w-2.5 rounded-[3px]"
+                          style={{ height: on ? 28 : 20, background: TYPE_COLOR[e.event_type], opacity: on ? 1 : 0.75, outline: on ? '2px solid var(--fg)' : 'none', outlineOffset: 2 }}
                         />
                       )
                     })}
@@ -82,7 +83,7 @@ export function EventNavBar({ ev }: { ev: Pick<EventRow, 'id' | 'title' | 'start
             })}
           </ul>
         </div>
-        <button onClick={() => go(next)} disabled={!next} className="h-12 w-12 shrink-0 rounded-lg border line text-xl disabled:opacity-30" aria-label="Ďalší event">›</button>
+        <button onClick={() => go(next)} disabled={!next} className="btn btn-icon shrink-0" aria-label="Ďalší event"><ChevronRight aria-hidden /></button>
       </div>
     </BottomBar>
   )

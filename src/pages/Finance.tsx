@@ -1,5 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
+import { Check, ChevronLeft, ChevronRight, FileText, Plus, TriangleAlert } from 'lucide-react'
+import { Empty, ErrorText, PageHeader, Section, Stat } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { BottomBar } from '../components/BottomBar'
@@ -57,122 +59,93 @@ export function Finance() {
   const done = (saved: boolean) => { setForm(null); if (saved) setReload((r) => r + 1) }
 
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <h1 className="display text-4xl font-bold capitalize whitespace-nowrap">
-        {monthName(m)} <span className="muted font-medium">{month.slice(0, 4)}</span>
-      </h1>
+    <div className="page">
+      <PageHeader title={<span className="capitalize">{monthName(m)} <span className="muted font-semibold">{month.slice(0, 4)}</span></span>} sub="Financie mesiaca" />
 
       <BottomBar>
         <div className="flex items-center gap-2">
-          <button onClick={() => setMonth(shift(month, -1))} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Predošlý mesiac">‹</button>
-          <button onClick={() => setMonth(todayLocal().slice(0, 7))} className="flex-1 h-11 rounded-lg border line font-semibold capitalize">
+          <button onClick={() => setMonth(shift(month, -1))} className="btn btn-icon" aria-label="Predošlý mesiac"><ChevronLeft aria-hidden /></button>
+          <button onClick={() => setMonth(todayLocal().slice(0, 7))} className="btn flex-1 capitalize" title="Tento mesiac">
             {monthName(m)} {month.slice(0, 4)}
           </button>
-          <button onClick={() => setMonth(shift(month, 1))} className="h-11 w-14 rounded-lg border line text-xl" aria-label="Ďalší mesiac">›</button>
+          <button onClick={() => setMonth(shift(month, 1))} className="btn btn-icon" aria-label="Ďalší mesiac"><ChevronRight aria-hidden /></button>
         </div>
       </BottomBar>
 
       {drive && !drive.connected && (
-        <p className="card p-3 text-sm">
-          Google Drive nie je prepojený, doklady sa zatiaľ nedajú nahrať. <Link to="/nastavenia" className="text-[var(--color-sky)] font-semibold">Nastavenia →</Link>
-        </p>
+        <div className="notice text-sm">
+          <TriangleAlert className="w-5 h-5 text-[var(--warn)] shrink-0" aria-hidden />
+          <p>Google Drive nie je prepojený, doklady sa zatiaľ nedajú nahrať. <Link to="/nastavenia" className="link">Nastavenia →</Link></p>
+        </div>
       )}
-      {error && <p className="text-[var(--color-signal)]">{error}</p>}
+      <ErrorText>{error}</ErrorText>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Vedľajšie náklady" value={eur(sum.exp)} sub={`${expenses.length} dokladov`} color="var(--color-sky)" />
-        <Stat label="Brigádnici + 15 %" value={eur(sum.pay)} sub={`základ ${eur(sum.payBase)}`} color="#7c3aed" />
-        <Stat label="Pošle Red Bull" value={eur(sum.total)} strong color="#2e8b57" />
+      <div className="card section grid grid-cols-3 gap-3">
+        <Stat label="Vedľajšie náklady" value={<span className="text-lg sm:text-2xl">{eur(sum.exp)}</span>} sub={`${expenses.length} dokladov`} />
+        <Stat label="Brigádnici + 15 %" value={<span className="text-lg sm:text-2xl">{eur(sum.pay)}</span>} sub={`základ ${eur(sum.payBase)}`} />
+        <Stat label="Pošle Red Bull" value={<span className="text-lg sm:text-2xl text-[var(--color-signal)]">{eur(sum.total)}</span>} sub="spolu" />
       </div>
 
-      <Card
+      <Section
         title="Výdavky"
-        right={!form && <button onClick={() => setForm('new')} className="h-9 px-3 rounded-lg font-semibold text-white bg-[var(--color-signal)] text-sm">+ Výdavok</button>}
+        action={!form && <button onClick={() => setForm('new')} className="btn btn-sm btn-primary"><Plus aria-hidden />Výdavok</button>}
       >
         {form ? (
           <ExpenseForm expense={form === 'new' ? undefined : form} defaultDay={month === todayLocal().slice(0, 7) ? undefined : `${month}-01`} onDone={done} />
         ) : expenses.length === 0 ? (
-          <p className="muted text-sm">Žiadne výdavky.</p>
+          <Empty>Žiadne výdavky.</Empty>
         ) : (
-          <ul className="divide-y line text-sm">
+          <ul className="list text-sm">
             {expenses.map((e) => (
-              <li key={e.id} className="py-2 flex gap-2 items-start">
-                <span className="muted w-12 shrink-0">{fmtDay(e.date).replace(/ \d{4}$/, '')}</span>
+              <li key={e.id} className="row !items-start">
+                <span className="muted w-12 shrink-0 num pt-px whitespace-nowrap">{fmtDay(e.date).replace(/ \d{4}$/, '')}</span>
                 <button onClick={() => setForm(e)} className="flex-1 min-w-0 text-left">
-                  <span className="block truncate">
-                    {e.doc_type && <span className="inline-block w-2.5 h-2.5 rounded-full mr-1.5 align-middle" style={{ background: DOC_COLOR[e.doc_type] }} />}
-                    <b style={{ color: e.doc_type ? DOC_COLOR[e.doc_type] : undefined }}>{(e.doc_type && DOC_LABEL[e.doc_type]) ?? 'Doklad'}</b>{e.description ? ` · ${e.description}` : ''}
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    {e.doc_type && <span className="dot" style={{ background: DOC_COLOR[e.doc_type] }} />}
+                    <b className="shrink-0">{(e.doc_type && DOC_LABEL[e.doc_type]) ?? 'Doklad'}</b>
+                    {e.description && <span className="truncate"> · {e.description}</span>}
                   </span>
-                  <span className="block truncate text-xs muted">
+                  <span className="block truncate text-xs muted mt-0.5">
                     {e.events?.title ?? 'bez eventu'}{e.paid_by ? ` · ${e.paid_by}` : ''}{e.control ? ` · ${e.control}` : ''}
                   </span>
                 </button>
                 {e.drive_file_url
-                  ? <a href={e.drive_file_url} target="_blank" rel="noreferrer" title="Doklad v Drive">📄</a>
-                  : <span className="opacity-30" title="Bez dokladu v Drive">📄</span>}
-                <span className="font-semibold tabular-nums w-20 text-right">{eur(Number(e.amount))}</span>
+                  ? <a href={e.drive_file_url} target="_blank" rel="noreferrer" className="link pt-px" title="Doklad v Drive"><FileText className="w-4 h-4" aria-hidden /></a>
+                  : <span className="opacity-25 pt-px" title="Bez dokladu v Drive"><FileText className="w-4 h-4" aria-hidden /></span>}
+                <span className="font-semibold num w-20 text-right">{eur(Number(e.amount))}</span>
               </li>
             ))}
           </ul>
         )}
-      </Card>
+      </Section>
 
-      <Card title="Brigádnici">
+      <Section title="Brigádnici" sub="Výplatu zadáš na stránke eventu v časti Vodiči.">
         {payouts.length === 0 ? (
-          <p className="muted text-sm">Žiadne výplaty.</p>
+          <Empty>Žiadne výplaty.</Empty>
         ) : (
-          <ul className="divide-y line text-sm">
+          <ul className="list text-sm">
             {payouts.map((p) => (
-              <li key={p.id} className="py-2 flex gap-2 items-center">
+              <li key={p.id} className="row">
                 <span className="flex-1 min-w-0">
                   <span className="block font-semibold truncate">{p.drivers?.name}</span>
                   {p.events && (
-                    <Link to="/event/$id" params={{ id: p.events.id }} className="block text-xs text-[var(--color-sky)] truncate">
+                    <Link to="/event/$id" params={{ id: p.events.id }} className="block text-xs link !font-medium truncate">
                       {fmtDay(p.events.start_date.slice(0, 10)).replace(/ \d{4}$/, '')} · {p.events.title}
                     </Link>
                   )}
                 </span>
-                <span className="text-right tabular-nums">
+                <span className="text-right num">
                   <b>{eur(withTax(p))}</b>
                   <span className="block text-xs muted">{eur(Number(p.amount))} + {Math.round(Number(p.tax_rate) * 100)} %</span>
                 </span>
-                <button
-                  onClick={() => togglePaid(p)}
-                  className={'h-8 px-2 rounded-lg text-xs font-semibold border shrink-0 ' + (p.paid ? 'border-green-700 text-green-700 dark:border-green-400 dark:text-green-400' : 'border-[var(--color-signal)] text-[var(--color-signal)]')}
-                >
-                  {p.paid ? 'Vyplatené' : 'Nevyplatené'}
+                <button onClick={() => togglePaid(p)} className={'badge ' + (p.paid ? 'badge-ok' : 'badge-danger') + ' !h-8 !px-2.5 shrink-0'} title="Prepnúť vyplatené / nevyplatené">
+                  {p.paid && <Check className="w-3.5 h-3.5" aria-hidden />}{p.paid ? 'Vyplatené' : 'Nevyplatené'}
                 </button>
               </li>
             ))}
           </ul>
         )}
-        <p className="text-xs muted mt-2">Výplatu zadáš na stránke eventu v časti Vodiči.</p>
-      </Card>
-    </section>
-  )
-}
-
-function Stat({ label, value, sub, strong, color }: { label: string; value: string; sub?: string; strong?: boolean; color: string }) {
-  return (
-    <div
-      className="card p-3"
-      style={{ borderTop: `4px solid ${color}`, ...(strong ? { background: `color-mix(in srgb, ${color} 12%, var(--card))` } : {}) }}
-    >
-      <p className="text-[11px] muted leading-tight">{label}</p>
-      <p className="display text-xl sm:text-2xl font-bold leading-tight mt-1" style={{ color }}>{value}</p>
-      {sub && <p className="text-[11px] muted">{sub}</p>}
-    </div>
-  )
-}
-
-function Card({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) {
-  return (
-    <div className="card p-4 min-w-0">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="display text-xl font-bold">{title}</h2>
-        {right}
-      </div>
-      {children}
+      </Section>
     </div>
   )
 }

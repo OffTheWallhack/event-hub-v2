@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Copy } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Badge, Section } from './ui'
 
 type Status = { connected: boolean; email: string | null }
 
@@ -61,27 +63,28 @@ export function DriveBox() {
   }
 
   return (
-    <div className="card p-4 mt-6">
-      <h2 className="display text-2xl font-bold">Google Drive</h2>
-      <p className="text-sm muted">Doklady sa ukladajú do priečinka Event Hub / Účty / mesiac.</p>
-
+    <Section
+      title="Google Drive"
+      sub="Doklady sa ukladajú do priečinka Event Hub / Účty / mesiac."
+      action={st?.connected ? <Badge tone="ok">Prepojené</Badge> : st ? <Badge tone="warn">Nepripojené</Badge> : null}
+    >
       {!st ? (
-        <p className="muted text-sm mt-2">Načítavam…</p>
+        <p className="muted text-sm">Načítavam…</p>
       ) : st.connected ? (
-        <div className="flex items-center gap-3 mt-3">
-          <p className="flex-1 text-sm">Prepojené{st.email ? <> s <b>{st.email}</b></> : ''}.</p>
-          <button onClick={disconnect} className="h-10 px-4 rounded-lg border line text-sm">Odpojiť</button>
+        <div className="flex items-center gap-3">
+          <p className="flex-1 min-w-0 text-sm truncate">{st.email ? <>Účet <b>{st.email}</b></> : 'Prepojené.'}</p>
+          <button onClick={disconnect} className="btn btn-sm">Odpojiť</button>
         </div>
       ) : (
-        <ol className="mt-3 grid gap-3 text-sm list-decimal pl-5">
+        <ol className="grid gap-3 text-sm list-decimal pl-5">
           <li>
-            <button onClick={copyCode} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-ink)] dark:bg-[var(--color-signal)]">Skopírovať kód skriptu</button>
+            <button onClick={copyCode} className="btn btn-sm btn-primary"><Copy aria-hidden />Skopírovať kód skriptu</button>
             {code && (
-              <textarea readOnly value={code} rows={5} className="mt-2 w-full p-2 rounded-lg border line bg-transparent font-mono text-[11px]" onFocus={(e) => e.target.select()} />
+              <textarea readOnly value={code} rows={5} className="input mt-2 font-mono !text-[11px]" onFocus={(e) => e.target.select()} />
             )}
           </li>
           <li>
-            Otvor <a href="https://script.google.com/home/projects/create" target="_blank" rel="noreferrer" className="text-[var(--color-sky)] font-semibold">script.google.com ↗</a> (nový projekt),
+            Otvor <a href="https://script.google.com/home/projects/create" target="_blank" rel="noreferrer" className="link">script.google.com ↗</a> (nový projekt),
             zmaž, čo tam je, vlož kód a ulož (ikonka diskety).
           </li>
           <li>
@@ -93,12 +96,12 @@ export function DriveBox() {
             Skopíruj <b>Web app URL</b> a vlož sem:
             <div className="flex gap-2 mt-2">
               <input
-                className="flex-1 min-w-0 h-10 px-3 rounded-lg border line bg-transparent"
+                className="input"
                 placeholder="https://script.google.com/macros/s/…/exec"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
               />
-              <button onClick={connect} disabled={busy || !url.trim()} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-50">
+              <button onClick={connect} disabled={busy || !url.trim()} className="btn btn-primary">
                 {busy ? 'Overujem…' : 'Prepojiť'}
               </button>
             </div>
@@ -106,6 +109,6 @@ export function DriveBox() {
         </ol>
       )}
       {msg && <p className="text-sm mt-2">{msg}</p>}
-    </div>
+    </Section>
   )
 }

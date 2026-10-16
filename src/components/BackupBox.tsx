@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { DatabaseBackup } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { Section } from './ui'
 
 type Last = { at: string; ok: boolean; name?: string; url?: string; tables?: number; rows?: number; kb?: number; error?: string }
 
@@ -30,25 +32,24 @@ export function BackupBox() {
   }
 
   return (
-    <div className="card p-4 mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="flex-1 min-w-0 text-sm">
-        <p className="font-semibold">Zálohy dát na Google Drive</p>
+    <Section
+      title="Zálohy na Google Drive"
+      sub="Automaticky každý deň o 0:00 a 12:00 (Event Hub / Zálohy). Fotky v zálohe nie sú."
+      action={<button onClick={run} disabled={busy} className="btn btn-sm"><DatabaseBackup aria-hidden />{busy ? 'Zálohujem…' : 'Zálohovať'}</button>}
+    >
+      <div className="text-sm">
         {!last ? (
           <p className="muted">Ešte žiadna záloha.</p>
         ) : last.ok ? (
-          <p className="muted">
-            {fmt(last.at)} · {last.tables} tabuliek, {last.rows} riadkov, {last.kb} kB
-            {last.url && <> · <a href={last.url} target="_blank" rel="noreferrer" className="underline">otvoriť</a></>}
+          <p>
+            Posledná {fmt(last.at)} <span className="muted">· {last.tables} tabuliek, {last.rows} riadkov, {last.kb} kB</span>
+            {last.url && <> · <a href={last.url} target="_blank" rel="noreferrer" className="link">otvoriť</a></>}
           </p>
         ) : (
-          <p className="text-[var(--color-signal)]">{fmt(last.at)} · zlyhala: {last.error}</p>
+          <p className="err">{fmt(last.at)} · zlyhala: {last.error}</p>
         )}
-        <p className="muted text-xs">Automaticky každý deň o 0:00 a o 12:00 (Drive: Event Hub / Zálohy). Fotky v súbore nie sú.</p>
-        {err && <p className="text-[var(--color-signal)]">{err}</p>}
+        {err && <p className="err mt-1">{err}</p>}
       </div>
-      <button onClick={run} disabled={busy} className="h-10 px-4 rounded-lg font-semibold text-white bg-[var(--color-signal)] disabled:opacity-60 shrink-0">
-        {busy ? 'Zálohujem…' : 'Zálohovať teraz'}
-      </button>
-    </div>
+    </Section>
   )
 }

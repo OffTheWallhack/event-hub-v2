@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { TodoList } from '../components/TodoList'
 import { CalendarBox } from '../components/CalendarBox'
+import { PageHeader } from '../components/ui'
 import { GARAGE_VEHICLES, type VehicleOpt } from '../lib/todos'
 
 export function Todos() {
@@ -12,10 +13,10 @@ export function Todos() {
     supabase.from('vehicles').select('id, name').eq('active', true).order('sort_order').then(({ data }) => setVehicles(((data ?? []) as VehicleOpt[]).filter((v) => GARAGE_VEHICLES.includes(v.name))))
   }, [])
   return (
-    <section className="flex flex-col gap-4 min-w-0">
-      <h1 className="display text-4xl font-bold">To-Do</h1>
+    <div className="page">
+      <PageHeader title="To-Do" />
       <TodoList vehicles={vehicles} isAdmin={isAdmin} />
       {isAdmin && <CalendarBox />}
-    </section>
+    </div>
   )
 }

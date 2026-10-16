@@ -4,6 +4,22 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.6.0',
+    date: '16. 10. 2026',
+    title: 'Nový vzhľad celej appky a ikona',
+    items: [
+      'Spodné menu ako v iPhone appkách (Kalendár, To-Do, Kartóny, Technika, Viac), na počítači bočný panel',
+      'Jednotné tlačidlá, polia, prepínače a karty v celej appke – všetko berie farby z témy',
+      'Písmo Inter (Barlow ostáva na výber vo Vzhľade)',
+      'Vzhľad má vlastnú stránku (Viac → Vzhľad), náhľady tém ukazujú farby, písmo aj sklo',
+      'Opravy tém: čiary v zoznamoch, čitateľný text na akcente, rozbaľovacie zoznamy v tmavých témach, Game Boy, Liquid glass',
+      'Stránka eventu: logistika hore, náklady nižšie, jedno tlačidlo Upraviť',
+      'Technika ako prehľadný zoznam s náhľadom, To-Do s prepínačom Otvorené / Hotové',
+      'Polia vo formulároch už na iPhone nepribližujú stránku pri písaní',
+      'Ikona appky na plochu iPhonu: EHv2 so Zuborom',
+    ],
+  },
+  {
     version: '1.5.0',
     date: '16. 10. 2026',
     title: 'Tri nové témy',
