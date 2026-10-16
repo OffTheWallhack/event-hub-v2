@@ -91,6 +91,16 @@ export const PRESETS: Preset[] = [
     bg: '#2a0f2e', fg: '#fff0e0', card: '#3d1640', line: '#7a2a5a', muted: '#e0a0b0', accent: '#ff7a18',
     cardOp: 75, blur: 8, radius: 18, font: 'exo', ...aura('#ff7a18', '#ff3d81', '#ffd23f', 55),
   }),
+  P('paddock', 'Paddock', {
+    bg: '#0c0d10', fg: '#f2f3f5', card: '#16181d', line: '#2c3038', muted: '#8d94a1', accent: '#ffc800',
+    cardOp: 96, radius: 2, border: 2, shadow: 0, font: 'techno', fontScale: 102,
+    fx: 'grid', fx1: '#ffc800', fx2: '#d7263d', fx3: '#2f6fdd', fxSpeed: 40, fxInt: 18,
+  }),
+  P('liquidglass', 'Liquid glass', {
+    bg: '#0b1020', fg: '#f4f7ff', card: '#ffffff', line: '#ffffff', muted: '#aab4d4', accent: '#7aa7ff',
+    cardOp: 12, blur: 24, radius: 26, border: 1, shadow: 8, font: 'system',
+    ...aura('#5b7cff', '#ff6bd6', '#3be3c8', 60),
+  }),
   P('nord', 'Nord', { bg: '#2e3440', fg: '#eceff4', card: '#3b4252', line: '#4c566a', muted: '#a3adc0', accent: '#88c0d0', radius: 10, font: 'opensans' }),
   P('paper', 'Papier', {
     bg: '#f6f1e6', fg: '#2a2118', card: '#fffaf0', line: '#cbbd9f', muted: '#7a6c55', accent: '#9c2f2f',

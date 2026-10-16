@@ -4,6 +4,12 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.5.0',
+    date: '16. 10. 2026',
+    title: 'Dve nové témy',
+    items: ['Paddock: tmavé karbónové pozadie, ostré rohy, žltý akcent', 'Liquid glass: priehľadné sklenené karty a farebné svetlo na pozadí'],
+  },
+  {
     version: '1.4.1',
     date: '8. 10. 2026',
     title: 'Čistejšie horné menu',
