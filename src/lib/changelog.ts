@@ -4,6 +4,15 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.8.1',
+    date: '24. 10. 2026',
+    title: 'Zoznam vodičov v Nastaveniach',
+    items: [
+      'Nastavenia → Vodiči: vodiča vypneš (Skrytý) a nebude sa ponúkať na výber na eventoch, v databáze ostáva',
+      'Na evente, kde už vodič je, ostane viditeľný aj keď je skrytý',
+    ],
+  },
+  {
     version: '1.8.0',
     date: '24. 10. 2026',
     title: 'Stránka eventu naživo a posuvník písma',

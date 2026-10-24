@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { DriveBox } from '../components/DriveBox'
 import { BackupBox } from '../components/BackupBox'
 import { SyncBox } from '../components/SyncBox'
+import { DriversBox } from '../components/DriversBox'
 import { Badge, ErrorText, PageHeader, Section, Seg } from '../components/ui'
 
 const ROLE_LABEL: Record<Role, string> = { pending: 'Čaká', driver: 'Vodič', admin: 'Admin' }
@@ -70,11 +71,13 @@ export function Users() {
         </ul>
       </Section>
 
+      <DriversBox />
+
       <Link to="/vzhlad" className="card section flex items-center gap-3">
         <span className="w-9 h-9 rounded-[var(--ctl-r)] grid place-items-center bg-[var(--fill-2)]"><Palette className="w-5 h-5" aria-hidden /></span>
         <span className="flex-1 min-w-0">
-          <span className="block font-semibold">Vzhľad a témy</span>
-          <span className="block text-sm muted">Predvoľby, farby, písmo, pozadie</span>
+          <span className="block font-semibold">Vzhľad</span>
+          <span className="block text-sm muted">Svetlá alebo tmavá téma, veľkosť písma</span>
         </span>
         <ChevronRight className="w-5 h-5 muted" aria-hidden />
       </Link>
