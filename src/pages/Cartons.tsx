@@ -81,7 +81,7 @@ export function Cartons() {
         {tiles.map((f) => {
           const n = stock[f.id] ?? 0
           return (
-            <div key={f.id} className={'relative overflow-hidden rounded-[calc(var(--r,16px)*0.9)] border-2 p-2.5 min-h-[5rem] ' + (n === 0 ? 'opacity-45' : '')} style={{ ...flavorStyle(f), textShadow: 'none' }}>
+            <div key={f.id} className={'relative overflow-hidden rounded-[var(--card-r)] border-2 p-2.5 min-h-[5rem] ' + (n === 0 ? 'opacity-45' : '')} style={{ ...flavorStyle(f), textShadow: 'none' }}>
               <p className="text-xs font-semibold truncate relative z-10 max-w-[70%]">{flavorName(f)}</p>
               <p className="text-3xl font-bold leading-none mt-1.5 relative z-10 num">{n}</p>
               <Photo kind="flavor-photos" path={f.photo_path} alt={flavorName(f)} className="absolute right-0.5 bottom-0.5 h-[85%] w-auto max-w-[55%] object-contain drop-shadow" />

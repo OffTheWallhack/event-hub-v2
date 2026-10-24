@@ -4,6 +4,17 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.7.0',
+    date: '24. 10. 2026',
+    title: 'Dve témy a pevné písma',
+    items: [
+      'Zmazaných všetkých 30 tém, posuvníky, animácie pozadia a CRT efekty – ostala jedna svetlá a jedna tmavá téma (Viac → Vzhľad)',
+      'Tri písma priamo v appke (nesťahujú sa z internetu): Inter na text, Barlow Condensed na nadpisy a veľké čísla, JetBrains Mono na kódy a štítky',
+      'Pevné rozmery: veľkosť písma ani zaoblenia sa už nedajú meniť, iPhone text sám nezväčšuje, stránka neposkakuje pri zobrazení posuvníka',
+      'Téma sa nastaví ešte pred vykreslením, takže pri otváraní appky nebliká zlé pozadie',
+    ],
+  },
+  {
     version: '1.6.0',
     date: '16. 10. 2026',
     title: 'Nový vzhľad celej appky a ikona',

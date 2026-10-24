@@ -3,15 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0f1b2d" />
+    <meta name="theme-color" content="#f5f3ee" />
     <title>Event Hub</title>
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-title" content="Event Hub" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Nunito:wght@500;700;800&family=VT323&family=Open+Sans:wght@400;600;700&family=Exo+2:wght@400;600;700&family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&family=Silkscreen:wght@400;700&family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@600;700&family=Lora:wght@400;600&display=swap" rel="stylesheet" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- téma sa nastaví hneď, ešte pred vykreslením, aby pri načítaní nebliklo zlé pozadie -->
+    <script>
+      (function () {
+        try {
+          var m = localStorage.getItem('theme')
+          if (m !== 'light' && m !== 'dark') m = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          var d = document.documentElement
+          d.dataset.theme = m; d.dataset.dark = String(m === 'dark'); d.style.colorScheme = m
+          var t = document.querySelector('meta[name="theme-color"]')
+          if (t) t.setAttribute('content', m === 'dark' ? '#0d1117' : '#f5f3ee')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
