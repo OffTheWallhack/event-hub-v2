@@ -95,5 +95,42 @@ export function fmtRange(e: Pick<EventRow, 'start_date' | 'end_date'>): string {
   return s === en ? fmtDay(s) : `${fmtDay(s)} – ${fmtDay(en)}`
 }
 
+// Slovenské skloňovanie: 1 mesiac, 2–4 mesiace, 5+ mesiacov (a rovnako pre roky)
+const plural = (n: number, one: string, few: string, many: string) => (n === 1 ? one : n >= 2 && n <= 4 ? few : many)
+
+/**
+ * Kedy to je od dnešného dňa: dnes, zajtra, pozajtra, o 3 dni, o 10 dní, o 2 mesiace…
+ * a do minulosti: včera, predvčerom, pred 3 dňami, pred mesiacom, pred 2 mesiacmi…
+ * Viacdňový event, ktorý práve beží, je „dnes“ (ak sa začal skôr, „prebieha“).
+ */
+export function relDay(e: Pick<EventRow, 'start_date' | 'end_date'>, today: string = todayLocal()): string {
+  const s = diffDays(today, startDay(e))
+  const en = diffDays(today, endDay(e))
+  if (s <= 0 && en >= 0) return s === 0 ? 'dnes' : 'prebieha'
+  const n = s > 0 ? s : en // vzdialenosť od najbližšieho konca (v dňoch, kladné = budúcnosť)
+  const abs = Math.abs(n)
+  if (abs === 1) return n > 0 ? 'zajtra' : 'včera'
+  if (abs === 2) return n > 0 ? 'pozajtra' : 'predvčerom'
+  if (abs < 30) return n > 0 ? `o ${abs} ${abs < 5 ? 'dni' : 'dní'}` : `pred ${abs} dňami`
+  const months = Math.round(abs / 30.4375)
+  if (months < 12) {
+    return n > 0
+      ? (months === 1 ? 'o mesiac' : `o ${months} ${plural(months, 'mesiac', 'mesiace', 'mesiacov')}`)
+      : (months === 1 ? 'pred mesiacom' : `pred ${months} mesiacmi`)
+  }
+  const years = Math.floor(months / 12)
+  return n > 0
+    ? (years === 1 ? 'o rok' : `o ${years} ${plural(years, 'rok', 'roky', 'rokov')}`)
+    : (years === 1 ? 'pred rokom' : `pred ${years} rokmi`)
+}
+
+/** Odkaz na miesto na mape: vlastný odkaz, ak je zadaný, inak Google Maps nájde prvý výsledok pre text z poľa Lokalita. */
+export function mapUrl(e: Pick<EventRow, 'location' | 'location_url'>): string | null {
+  const own = e.location_url?.trim()
+  if (own) return own
+  const q = e.location?.trim()
+  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null
+}
+
 export const eur = (n: number) =>
   new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' }).format(n)

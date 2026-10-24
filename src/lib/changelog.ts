@@ -4,6 +4,20 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.8.0',
+    date: '24. 10. 2026',
+    title: 'Stránka eventu naživo a posuvník písma',
+    items: [
+      'Vzhľad: posuvník veľkosti písma (12–18 px, štandard je teraz menší, 15 px) – menšie písmo zmenší aj bloky a tlačidlá',
+      'Stránka eventu je jedna stránka v poradí: Vozidlo a vodič, Logistika, Technika, Kartóny, Náklady, Pošli vodičovi, Report',
+      'Žiadne Upraviť ani Hotovo: čo prepíšeš alebo ťukneš, uloží sa samo (hore sa ukáže Ukladám… / Uložené)',
+      'Lokalita: odkaz na mapu sa nájde sám podľa napísaného miesta (Google Maps, prvý výsledok); vlastný odkaz je nepovinný',
+      'Kartóny: pri každej príchuti − / +, sklad sa prepočíta sám',
+      'Technika: pri každom kuse − / +, ďalšia technika cez Pridať techniku',
+      'Hlavička: pred dátumom je dnes / zajtra / pozajtra / o 3 dni / o 2 mesiace (a včera, pred 3 dňami…), dlhý text z Basecampu má Zobraziť viac, preč je riadok o synchronizácii',
+    ],
+  },
+  {
     version: '1.7.0',
     date: '24. 10. 2026',
     title: 'Dve témy a pevné písma',

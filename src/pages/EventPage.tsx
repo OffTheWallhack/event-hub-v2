@@ -1,32 +1,37 @@
 import { Link, useParams } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { CalendarDays, ChevronLeft, ExternalLink, FileText, MapPin, Pencil, Plus } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { CalendarDays, Check, ChevronLeft, ExternalLink, FileText, MapPin, Plus } from 'lucide-react'
 import { Badge, Chips, Empty, ErrorText, Field, KV, Section, Seg, dayWord, linkify } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { MovementForm } from '../components/MovementForm'
-import { EventGear } from '../components/EventGear'
+import { EquipmentGrid, VehicleChips, useEventGear } from '../components/EventGear'
 import { EventDrivers } from '../components/EventDrivers'
+import { EventCartons, type EventCartonRow } from '../components/EventCartons'
+import { LiveField } from '../components/LiveField'
 import { BriefShare } from '../components/BriefShare'
 import { EventReport } from '../components/EventReport'
 import { EventNavBar } from '../components/EventNavBar'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
-import type { Flavor } from '../lib/cartons'
 import {
   type Department, type EventRow, type EventStatus, type EventType,
   DEPT_LABEL, STATUS_LABEL, TYPE_COLOR, TYPE_LABEL, TYPE_TEXT,
-  durationDays, eur, fmtDay, fmtRange, startDay,
+  durationDays, eur, fmtDay, fmtRange, mapUrl, relDay, startDay,
 } from '../lib/events'
 
-type Carton = { cartons: number; flavors: { name: string; label: string | null; sort_order: number } | null }
+type Carton = EventCartonRow & { flavors: { name: string; label: string | null; sort_order: number } | null }
 type Payout = { id: string; amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null }
 
 type Details = { cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
 
+// polia eventu, ktoré sa dajú meniť priamo na stránke (Basecamp polia sa menia len synchronizáciou)
+type Editable = Pick<EventRow, 'status' | 'event_type' | 'departments' | 'location' | 'location_url' | 'planned_arrival' | 'contact' | 'spectators' | 'description'>
+type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+
 const STATUSES: EventStatus[] = ['planned', 'done', 'cancelled']
 const TYPES: EventType[] = ['event_car', 'support', 'adhoc', 'servis']
 const DEPTS: Department[] = ['ec', 'culture', 'sport', 'onpremise']
+const nn = (s: string) => (s.trim() === '' ? null : s.trim())
 
 export function EventPage() {
   const { id } = useParams({ strict: false }) as { id: string }
@@ -34,9 +39,12 @@ export function EventPage() {
   const [ev, setEv] = useState<EventRow | null>(null)
   const [d, setD] = useState<Details | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false)
-  const [addCartons, setAddCartons] = useState<Flavor[] | null>(null)
   const [expenseForm, setExpenseForm] = useState<Expense | 'new' | null>(null)
+  const [showAllGear, setShowAllGear] = useState(false)
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const gear = useEventGear(id)
+  const savedTimer = useRef<number | undefined>(undefined)
 
   async function load() {
     const { data, error } = await supabase.from('events').select('*').eq('id', id).maybeSingle()
@@ -45,7 +53,7 @@ export function EventPage() {
     setEv(data as EventRow)
 
     const [ct, ex, po] = await Promise.all([
-      supabase.from('carton_movements').select('cartons, flavors(name, label, sort_order)').eq('event_id', id).eq('type', 'event'),
+      supabase.from('carton_movements').select('id, flavor_id, cartons, flavors(name, label, sort_order)').eq('event_id', id).eq('type', 'event'),
       isAdmin
         ? supabase.from('expenses').select(EXPENSE_COLUMNS).eq('event_id', id).order('date')
         : Promise.resolve({ data: [] }),
@@ -60,17 +68,24 @@ export function EventPage() {
     })
   }
   useEffect(() => {
-    setEditing(false); setAddCartons(null); setExpenseForm(null); setD(null)
+    setExpenseForm(null); setShowAllGear(false); setD(null); setSaveState('idle'); setSaveError(null)
     load()
   }, [id, isAdmin])
 
-  async function openCartons() {
-    const { data } = await supabase
-      .from('flavors')
-      .select('id, name, label, color_bg, color_text, color_border, sort_order, active')
-      .eq('active', true)
-      .order('sort_order')
-    setAddCartons((data ?? []) as Flavor[])
+  /** Uloží zmenu poľa eventu hneď. Stránka sa prekreslí ešte pred odpoveďou servera, pri chybe sa načíta pôvodný stav. */
+  async function patch(p: Partial<Editable>) {
+    const evId = id
+    setEv((e) => (e && e.id === evId ? { ...e, ...p } : e))
+    setSaveState('saving'); setSaveError(null)
+    window.clearTimeout(savedTimer.current)
+    const { error } = await supabase.from('events').update(p).eq('id', evId)
+    if (error) {
+      setSaveState('error'); setSaveError(error.message)
+      load()
+    } else {
+      setSaveState('saved')
+      savedTimer.current = window.setTimeout(() => setSaveState('idle'), 2000)
+    }
   }
 
   if (error) return <p className="err">{error}</p>
@@ -87,7 +102,7 @@ export function EventPage() {
   const payWithTax = (p: Payout) => Number(p.amount) * (1 + Number(p.tax_rate))
   const paySum = d.payouts.reduce((s, p) => s + payWithTax(p), 0)
 
-  // kartóny po príchutiach (pohyby typu event sú záporné)
+  // kartóny po príchutiach pre report (pohyby typu event sú záporné)
   const cartonMap = new Map<string, { label: string; n: number; order: number }>()
   for (const c of d.cartons) {
     const key = c.flavors?.name ?? '?'
@@ -97,6 +112,9 @@ export function EventPage() {
   }
   const cartons = [...cartonMap.values()].filter((c) => c.n !== 0).sort((a, b) => a.order - b.order)
   const statusTone = ev.status === 'done' ? 'ok' : ev.status === 'cancelled' ? 'danger' : 'neutral'
+  const rel = relDay(ev)
+  const map = mapUrl(ev)
+  const totalPieces = gear.evEq.reduce((s, e) => s + e.quantity, 0)
 
   return (
     <div className="page">
@@ -105,42 +123,99 @@ export function EventPage() {
         <Link to="/" search={{ m: startDay(ev).slice(0, 7) }} className="btn btn-sm btn-quiet -ml-3"><ChevronLeft aria-hidden />Kalendár</Link>
       </div>
 
-      {/* Basecamp = zdroj pravdy, mení ho len sync */}
+      {/* Hlavička: čo prišlo z Basecampu (mení ho len synchronizácia) */}
       <header className="card section">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="badge" style={{ background: TYPE_COLOR[ev.event_type], color: TYPE_TEXT[ev.event_type] }}>{TYPE_LABEL[ev.event_type]}</span>
           <Badge tone={statusTone}>{STATUS_LABEL[ev.status]}</Badge>
           {ev.departments.map((dp) => <Badge key={dp}>{DEPT_LABEL[dp]}</Badge>)}
+          {isAdmin && <SaveIndicator state={saveState} />}
         </div>
         <h1 className={'page-title !text-[1.75rem] mt-3 ' + (ev.status === 'cancelled' ? 'line-through opacity-60' : '')}>{ev.title}</h1>
         <p className="mt-2 flex items-start gap-2 font-medium">
           <CalendarDays className="w-4 h-4 muted shrink-0 mt-[0.2em]" aria-hidden />
-          <span>{fmtRange(ev)} <span className="muted font-normal">· {durationDays(ev)} {dayWord(durationDays(ev))}</span></span>
+          <span>
+            <b className="text-[var(--link)]">{rel.charAt(0).toUpperCase() + rel.slice(1)}</b>
+            <span className="muted font-normal"> · </span>
+            {fmtRange(ev)} <span className="muted font-normal whitespace-nowrap">· {durationDays(ev)} {dayWord(durationDays(ev))}</span>
+          </span>
         </p>
         {ev.deleted_from_basecamp && <p className="err font-semibold mt-2">Event zmizol z Basecampu.</p>}
         {(ev.basecamp_notes || ev.basecamp_url) && (
           <div className="mt-4 rounded-[var(--ctl-r)] bg-[var(--fill)] p-3">
-            <p className="eyebrow">Z Basecampu · mení sa len synchronizáciou</p>
-            {ev.basecamp_notes && <p className="mt-1.5 text-sm whitespace-pre-wrap break-words">{linkify(ev.basecamp_notes)}</p>}
+            {ev.basecamp_notes && <Clamp key={ev.id}>{linkify(ev.basecamp_notes)}</Clamp>}
             {ev.basecamp_url && (
-              <a href={ev.basecamp_url} target="_blank" rel="noreferrer" className="link text-sm inline-flex items-center gap-1 mt-2">
+              <a href={ev.basecamp_url} target="_blank" rel="noreferrer" className={'link text-sm flex items-center gap-1 w-fit ' + (ev.basecamp_notes ? 'mt-2' : '')}>
                 Otvoriť v Basecampe<ExternalLink className="w-3.5 h-3.5" aria-hidden />
               </a>
             )}
           </div>
         )}
+        {saveError && <div className="mt-2"><ErrorText>{saveError}</ErrorText></div>}
       </header>
 
-      {editing ? (
-        <EditForm ev={ev} onDone={(saved) => { setEditing(false); if (saved) load() }} />
+      {/* 1. Vozidlo a vodič */}
+      <Section title="Vozidlo a vodič">
+        <div className="grid gap-5">
+          <div>
+            <p className="field-label mb-1.5">Vozidlo</p>
+            <VehicleChips gear={gear} isAdmin={isAdmin} />
+          </div>
+          <div>
+            <p className="field-label mb-1.5">Vodič</p>
+            <EventDrivers eventId={ev.id} isAdmin={isAdmin} onChanged={load} />
+          </div>
+        </div>
+      </Section>
+
+      {/* 2. Logistika */}
+      {isAdmin ? (
+        <Section title="Logistika">
+          <div className="form">
+            <div className="field"><span className="field-label">Stav</span>
+              <Seg options={STATUSES.map((s) => [s, STATUS_LABEL[s]] as const)} value={ev.status} onChange={(s) => patch({ status: s })} /></div>
+            <div className="field"><span className="field-label">Typ</span>
+              <Chips options={TYPES.map((t) => [t, TYPE_LABEL[t]] as const)} isOn={(t) => ev.event_type === t} onPick={(t) => patch({ event_type: t })} /></div>
+            <div className="field"><span className="field-label">Oddelenie (aj viac)</span>
+              <Chips
+                options={DEPTS.map((dp) => [dp, DEPT_LABEL[dp]] as const)}
+                isOn={(dp) => ev.departments.includes(dp)}
+                onPick={(dp) => patch({ departments: ev.departments.includes(dp) ? ev.departments.filter((x) => x !== dp) : [...ev.departments, dp] })}
+              /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Čas príchodu">
+                <LiveField type="time" value={ev.planned_arrival?.slice(0, 5) ?? ''} delay={400} onSave={(v) => patch({ planned_arrival: nn(v) })} />
+              </Field>
+              <Field label="Diváci">
+                <LiveField type="number" inputMode="numeric" min={0} value={ev.spectators?.toString() ?? ''} onSave={(v) => patch({ spectators: v.trim() === '' ? null : Math.max(0, Math.trunc(Number(v)) || 0) })} />
+              </Field>
+            </div>
+            <div className="field">
+              <span className="field-label">Lokalita</span>
+              <LiveField value={ev.location ?? ''} placeholder="Napíš miesto, mapa sa nájde sama" onSave={(v) => patch({ location: nn(v) })} />
+              {map ? (
+                <a href={map} target="_blank" rel="noreferrer" className="link text-sm inline-flex items-center gap-1 justify-self-start">
+                  <MapPin className="w-4 h-4" aria-hidden />Otvoriť na mape<ExternalLink className="w-3.5 h-3.5" aria-hidden />
+                </a>
+              ) : (
+                <span className="text-xs muted">Po zadaní lokality sa tu ukáže odkaz na mapu.</span>
+              )}
+            </div>
+            <Field label="Vlastný odkaz na mapu (nepovinné)" hint="Nechaj prázdne – odkaz sa nájde automaticky podľa lokality.">
+              <LiveField type="url" inputMode="url" value={ev.location_url ?? ''} placeholder="https://maps.google.com/…" onSave={(v) => patch({ location_url: nn(v) })} />
+            </Field>
+            <Field label="Kontakt"><LiveField multiline rows={2} value={ev.contact ?? ''} onSave={(v) => patch({ contact: nn(v) })} /></Field>
+            <Field label="Popis práce"><LiveField multiline rows={3} value={ev.description ?? ''} onSave={(v) => patch({ description: nn(v) })} /></Field>
+          </div>
+        </Section>
       ) : (
-        <Section title="Logistika" action={isAdmin && <button onClick={() => setEditing(true)} className="btn btn-sm"><Pencil aria-hidden />Upraviť</button>}>
+        <Section title="Logistika">
           <dl className="kv">
             <KV label="Príchod">{ev.planned_arrival?.slice(0, 5)}</KV>
             <KV label="Lokalita">
               {ev.location}
-              {ev.location_url && (
-                <a href={ev.location_url} target="_blank" rel="noreferrer" className="link ml-2 inline-flex items-center gap-0.5">
+              {map && (
+                <a href={map} target="_blank" rel="noreferrer" className="link ml-2 inline-flex items-center gap-0.5">
                   <MapPin className="w-3.5 h-3.5" aria-hidden />Mapa
                 </a>
               )}
@@ -152,35 +227,17 @@ export function EventPage() {
         </Section>
       )}
 
-      <EventDrivers eventId={ev.id} isAdmin={isAdmin} onChanged={load} />
-      <EventGear eventId={ev.id} isAdmin={isAdmin} />
-
-      <Section
-        title="Kartóny"
-        action={isAdmin && !addCartons && (
-          <button onClick={openCartons} className="btn btn-sm"><Plus aria-hidden />Pridať</button>
-        )}
-      >
-        {addCartons ? (
-          <MovementForm
-            flavors={addCartons}
-            fixedEventId={ev.id}
-            fixedEventDay={startDay(ev)}
-            onDone={(saved) => { setAddCartons(null); if (saved) load() }}
-          />
-        ) : cartons.length === 0 ? (
-          <Empty>Žiadne.</Empty>
-        ) : (
-          <ul className="chips">
-            {cartons.map((c) => (
-              <li key={c.label} className="chip pointer-events-none">
-                <b className="num">{c.n}×</b> {c.label}
-              </li>
-            ))}
-          </ul>
-        )}
+      {/* 3. Technika */}
+      <Section title={<>Technika{totalPieces ? <span className="muted font-normal"> · {totalPieces} ks</span> : ''}</>}>
+        <EquipmentGrid gear={gear} isAdmin={isAdmin} showAll={showAllGear} onShowAll={setShowAllGear} />
       </Section>
 
+      {/* 4. Kartóny */}
+      <Section title="Kartóny">
+        <EventCartons eventId={ev.id} day={startDay(ev)} isAdmin={isAdmin} rows={d.cartons} onChanged={load} />
+      </Section>
+
+      {/* 5. Náklady */}
       {isAdmin && (
         <Section
           title="Náklady"
@@ -227,6 +284,7 @@ export function EventPage() {
         </Section>
       )}
 
+      {/* 6. Pošli vodičovi */}
       {isAdmin && <BriefShare ev={ev} />}
 
       {isAdmin && <EventReport key={ev.id + ev.status} ev={ev} cartons={cartons.map((c) => ({ label: c.label, n: c.n }))} onChanged={load} />}
@@ -241,72 +299,31 @@ export function EventPage() {
   )
 }
 
-function EditForm({ ev, onDone }: { ev: EventRow; onDone: (saved: boolean) => void }) {
-  const [f, setF] = useState({
-    status: ev.status,
-    event_type: ev.event_type,
-    departments: ev.departments,
-    location: ev.location ?? '',
-    location_url: ev.location_url ?? '',
-    planned_arrival: ev.planned_arrival?.slice(0, 5) ?? '',
-    contact: ev.contact ?? '',
-    spectators: ev.spectators?.toString() ?? '',
-    description: ev.description ?? '',
-  })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }))
-  const nn = (s: string) => (s.trim() === '' ? null : s.trim())
-
-  async function save() {
-    setSaving(true)
-    setError(null)
-    const { error } = await supabase
-      .from('events')
-      .update({
-        status: f.status,
-        event_type: f.event_type,
-        departments: f.departments,
-        location: nn(f.location),
-        location_url: nn(f.location_url),
-        planned_arrival: nn(f.planned_arrival),
-        contact: nn(f.contact),
-        spectators: f.spectators.trim() === '' ? null : Number(f.spectators),
-        description: nn(f.description),
-      })
-      .eq('id', ev.id)
-    setSaving(false)
-    if (error) setError(error.message)
-    else onDone(true)
-  }
-
+/** Dlhý text z Basecampu: ukáže ~4 riadky a tlačidlo „Zobraziť viac“ (len ak sa naozaj niečo skrýva). */
+function Clamp({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const [over, setOver] = useState(false)
+  const ref = useRef<HTMLParagraphElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (el && !open) setOver(el.scrollHeight > el.clientHeight + 1)
+  }, [children, open])
   return (
-    <Section title="Upraviť event">
-      <div className="form">
-        <div className="field"><span className="field-label">Stav</span>
-          <Seg options={STATUSES.map((s) => [s, STATUS_LABEL[s]] as const)} value={f.status} onChange={(s) => set('status', s)} /></div>
-        <div className="field"><span className="field-label">Typ</span>
-          <Chips options={TYPES.map((t) => [t, TYPE_LABEL[t]] as const)} isOn={(t) => f.event_type === t} onPick={(t) => set('event_type', t)} /></div>
-        <div className="field"><span className="field-label">Oddelenie (aj viac)</span>
-          <Chips
-            options={DEPTS.map((dp) => [dp, DEPT_LABEL[dp]] as const)}
-            isOn={(dp) => f.departments.includes(dp)}
-            onPick={(dp) => set('departments', f.departments.includes(dp) ? f.departments.filter((x) => x !== dp) : [...f.departments, dp])}
-          /></div>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Čas príchodu"><input type="time" className="input" value={f.planned_arrival} onChange={(e) => set('planned_arrival', e.target.value)} /></Field>
-          <Field label="Diváci"><input type="number" inputMode="numeric" min={0} className="input" value={f.spectators} onChange={(e) => set('spectators', e.target.value)} /></Field>
-        </div>
-        <Field label="Lokalita"><input className="input" value={f.location} onChange={(e) => set('location', e.target.value)} /></Field>
-        <Field label="Odkaz na mapu"><input type="url" inputMode="url" className="input" value={f.location_url} onChange={(e) => set('location_url', e.target.value)} placeholder="https://maps.google.com/…" /></Field>
-        <Field label="Kontakt"><textarea rows={2} className="input" value={f.contact} onChange={(e) => set('contact', e.target.value)} /></Field>
-        <Field label="Popis práce"><textarea rows={3} className="input" value={f.description} onChange={(e) => set('description', e.target.value)} /></Field>
-        <ErrorText>{error}</ErrorText>
-        <div className="form-actions">
-          <button onClick={save} disabled={saving} className="btn btn-primary">{saving ? 'Ukladám…' : 'Uložiť'}</button>
-          <button onClick={() => onDone(false)} className="btn btn-quiet">Zrušiť</button>
-        </div>
-      </div>
-    </Section>
+    <>
+      <p ref={ref} className={'text-sm whitespace-pre-wrap break-words ' + (open ? '' : 'line-clamp-4')}>{children}</p>
+      {(over || open) && (
+        <button type="button" onClick={() => setOpen(!open)} className="link text-sm mt-1 block">{open ? 'Zobraziť menej' : 'Zobraziť viac'}</button>
+      )}
+    </>
+  )
+}
+
+function SaveIndicator({ state }: { state: SaveState }) {
+  if (state === 'idle') return null
+  return (
+    <span className={'ml-auto text-xs inline-flex items-center gap-1 ' + (state === 'error' ? 'err' : 'muted')} role="status">
+      {state === 'saved' && <Check className="w-3.5 h-3.5" aria-hidden />}
+      {state === 'saving' ? 'Ukladám…' : state === 'saved' ? 'Uložené' : 'Nepodarilo sa uložiť'}
+    </span>
   )
 }

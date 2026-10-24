@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import './styles.css'
 import { AuthProvider, useAuth } from './lib/auth'
-import { applyMode, cleanOldSettings, loadMode } from './lib/theme'
+import { applyMode, applySize, cleanOldSettings, loadMode, loadSize } from './lib/theme'
 import { router } from './router'
 import { Login } from './pages/Login'
 import { Pending } from './pages/Pending'
@@ -11,6 +11,7 @@ import { BriefPage } from './pages/BriefPage'
 
 cleanOldSettings()
 applyMode(loadMode())
+applySize(loadSize(), false)
 
 function App() {
   const { loading, session, profile, isAdmin } = useAuth()

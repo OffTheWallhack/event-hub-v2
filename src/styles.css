@@ -82,8 +82,8 @@
 
 @layer base {
   *, ::before, ::after { border-color: var(--line); }
-  /* pevná veľkosť písma: 1rem = vždy 16 px, iPhone ani prehliadač ju sám nezväčšuje */
-  html { font-size: 16px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-gutter: stable; }
+  /* veľkosť písma určuje posuvník vo Vzhľade (predvolene 15 px, nastaví sa v theme.ts); iPhone ani prehliadač ju sám nemení */
+  html { font-size: 15px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scrollbar-gutter: stable; }
   html, body, #root { height: 100%; }
   #root { position: relative; z-index: 1; }
   body {

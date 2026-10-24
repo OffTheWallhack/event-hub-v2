@@ -25,6 +25,30 @@ export function applyMode(m: Mode) {
   try { localStorage.setItem(KEY, m) } catch { /* ignore */ }
 }
 
+// ---- veľkosť písma: jediný posuvník vo Vzhľade, všetky bloky sú v rem, takže sa zmenšia/zväčšia spolu s ním ----
+const SIZE_KEY = 'fontSize'
+export const SIZE_MIN = 12
+export const SIZE_MAX = 18
+export const SIZE_DEFAULT = 15
+
+export function loadSize(): number {
+  try {
+    const v = Number(localStorage.getItem(SIZE_KEY))
+    if (v >= SIZE_MIN && v <= SIZE_MAX) return v
+  } catch { /* ignore */ }
+  return SIZE_DEFAULT
+}
+
+/** save = false: len zobraz (štart appky), nezapisuj predvolenú hodnotu do prehliadača. */
+export function applySize(px: number, save = true) {
+  document.documentElement.style.fontSize = `${px}px`
+  if (!save) return
+  try {
+    if (px === SIZE_DEFAULT) localStorage.removeItem(SIZE_KEY)
+    else localStorage.setItem(SIZE_KEY, String(px))
+  } catch { /* ignore */ }
+}
+
 /** Zmaže nastavenia zo starého vzhľadu (30 tém, posuvníky, písma). */
 export function cleanOldSettings() {
   try { for (const k of ['themeCfg', 'themeMine', 'keepFont']) localStorage.removeItem(k) } catch { /* ignore */ }

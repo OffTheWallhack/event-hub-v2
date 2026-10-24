@@ -18,6 +18,8 @@
           if (m !== 'light' && m !== 'dark') m = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
           var d = document.documentElement
           d.dataset.theme = m; d.dataset.dark = String(m === 'dark'); d.style.colorScheme = m
+          var z = Number(localStorage.getItem('fontSize'))
+          d.style.fontSize = (z >= 12 && z <= 18 ? z : 15) + 'px'
           var t = document.querySelector('meta[name="theme-color"]')
           if (t) t.setAttribute('content', m === 'dark' ? '#0d1117' : '#f5f3ee')
         } catch (e) {}
