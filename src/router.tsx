@@ -13,6 +13,7 @@ import { Garage } from './pages/Garage'
 import { Info } from './pages/Info'
 import { More } from './pages/More'
 import { Appearance } from './pages/Appearance'
+import { Showroom } from './pages/Showroom'
 
 type Ctx = { isAdmin: boolean }
 
@@ -61,6 +62,7 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: '/info', component: Info }),
   createRoute({ getParentRoute: () => rootRoute, path: '/viac', component: More }),
   createRoute({ getParentRoute: () => rootRoute, path: '/vzhlad', component: Appearance }),
+  createRoute({ getParentRoute: () => rootRoute, path: '/showroom', component: Showroom }),
   createRoute({
     getParentRoute: () => rootRoute,
     path: '/financie',

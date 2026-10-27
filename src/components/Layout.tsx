@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 import {
-  CalendarDays, Ellipsis, FileDown, Info, ListChecks, LogOut, Package, Palette, Settings, Speaker, Wallet, Wrench, type LucideIcon,
+  CalendarDays, Car, Ellipsis, FileDown, Info, ListChecks, LogOut, Package, Palette, Settings, Speaker, Wallet, Wrench, type LucideIcon,
 } from 'lucide-react'
 import { useAuth } from '../lib/auth'
 import { Reminders } from './Reminders'
@@ -15,6 +15,7 @@ export const NAV: NavItem[] = [
   { to: '/technika', label: 'Technika', icon: Speaker, tab: true },
   { to: '/financie', label: 'Financie', icon: Wallet, admin: true },
   { to: '/garaz', label: 'Garáž', icon: Wrench },
+  { to: '/showroom', label: 'Showroom', icon: Car },
   { to: '/export', label: 'Export', icon: FileDown },
   { to: '/vzhlad', label: 'Vzhľad', icon: Palette },
   { to: '/nastavenia', label: 'Nastavenia', icon: Settings, admin: true },

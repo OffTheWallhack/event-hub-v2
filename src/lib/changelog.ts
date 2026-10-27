@@ -4,6 +4,17 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.10.0',
+    date: '27. 10. 2026',
+    title: '3D garáž so Zuborom a Suggou',
+    items: [
+      'Prihlásenie a úvodná obrazovka: Zubor a Sugga zaparkované v tmavej zadymenej garáži, svetlo na predok a logo',
+      'Nová stránka Showroom (Viac → Showroom): garáž sa dá otáčať prstom a približovať',
+      'Vzadu bliká a iskrí pokazená dióda, vpravo svieti miesto pre chladničku (model príde neskôr)',
+      'Modely zmenšené z 33 MB na 1,3 MB (meshopt + webp), 3D sa sťahuje až keď treba',
+    ],
+  },
+  {
     version: '1.9.1',
     date: '27. 10. 2026',
     title: 'Export Finance presne ako účtovná tabuľka',
