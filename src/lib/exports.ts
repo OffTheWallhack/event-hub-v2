@@ -217,11 +217,25 @@ type ExpenseExportRow = {
 type PayoutExportRow = {
   amount: number
   tax_rate: number
+  note: string | null
   drivers: { name: string } | null
-  events: { title: string; start_date: string; departments: Department[] } | null
+  events: { title: string; start_date: string; end_date: string | null; departments: Department[] } | null
 }
 
 const eurText = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(2)} EUR`
+
+// Kódy oddelení v účtovnej tabuľke (iné ako v ostatných exportoch): Culture = CLT, Sport = SED.
+const FIN_DPT: Record<Department, string> = { ec: 'EC', culture: 'CLT', sport: 'SED', onpremise: 'ONP' }
+const finDpt = (d: Department[] | null | undefined) => (d ?? []).map((x) => FIN_DPT[x]).join(' / ')
+
+/** Dátum ako v tabuľke: „5.9.2026“, viac dní „19.-20.9.2026“, cez mesiace „30.9.-1.10.2026“. */
+function dayText(from: string, to: string | null): string {
+  const [fy, fm, fd] = from.split('-').map(Number)
+  if (!to || to <= from) return `${fd}.${fm}.${fy}`
+  const [ty, tm, td] = to.split('-').map(Number)
+  if (ty === fy && tm === fm) return `${fd}.-${td}.${tm}.${ty}`
+  return `${fd}.${fm}.${fy !== ty ? fy : ''}-${td}.${tm}.${ty}`
+}
 
 export async function exportFinance(months: string[]) {
   const wb = await newBook()
@@ -237,57 +251,68 @@ export async function exportFinance(months: string[]) {
         .gte('date', s).lt('date', e).order('date').range(0, 4999),
       supabase
         .from('driver_payouts')
-        .select('amount, tax_rate, drivers(name), events!inner(title, start_date, departments)')
+        .select('amount, tax_rate, note, drivers(name), events!inner(title, start_date, end_date, departments)')
         .gte('events.start_date', s + 'T00:00:00Z').lt('events.start_date', e + 'T00:00:00Z').range(0, 4999),
     ])
     if (ex.error) throw ex.error
     if (po.error) throw po.error
 
-    type Line = { date: string; type: string; amount: number; event: string; dpt: string; desc: string; control: string; file: Cell }
+    type Line = { sort: string; date: Cell; type: string; amount: number; event: string; dpt: string; desc: string; control: string; file: Cell }
     const lines: Line[] = [
       ...(ex.data as unknown as ExpenseExportRow[]).map((r): Line => ({
-        date: r.date,
-        type: r.doc_type ? DOC_LABEL[r.doc_type] : '',
+        sort: r.date,
+        date: xlDate(r.date),
+        type: r.doc_type ?? '',
         amount: Number(r.amount),
         event: r.events?.title ?? '',
-        dpt: r.department || dpt(r.events?.departments),
+        dpt: r.department || finDpt(r.events?.departments),
         desc: r.description ?? '',
         control: r.control ?? '',
         file: r.drive_file_url ? { text: r.drive_file_name ?? 'doklad', hyperlink: r.drive_file_url } : null,
       })),
-      ...(po.data as unknown as PayoutExportRow[]).map((r): Line => ({
-        date: dayOf(r.events?.start_date),
-        type: DOC_LABEL.brigadnik,
-        amount: withTax(r),
-        event: r.events?.title ?? '',
-        dpt: dpt(r.events?.departments),
-        desc: `${r.drivers?.name ?? '?'} - ${eurText(Number(r.amount))} + ${Math.round(Number(r.tax_rate) * 100)}%`,
-        control: '',
-        file: null,
-      })),
-    ].sort((a, b) => a.date.localeCompare(b.date))
+      ...(po.data as unknown as PayoutExportRow[]).map((r): Line => {
+        const from = dayOf(r.events?.start_date)
+        const to = r.events?.end_date ? endDay(r.events) : null
+        const single = !to || to <= from
+        return {
+          sort: from,
+          date: single ? xlDate(from) : dayText(from, to),
+          type: 'brigadnik',
+          amount: withTax(r),
+          event: r.events?.title ?? '',
+          dpt: finDpt(r.events?.departments),
+          desc: `${r.drivers?.name ?? '?'} - ${eurText(Number(r.amount))} + ${Math.round(Number(r.tax_rate) * 100)}%`,
+          control: '',
+          file: r.note?.trim() ? `brigadnik / ${r.note.trim()}` : 'brigadnik',
+        }
+      }),
+    ].sort((a, b) => a.sort.localeCompare(b.sort))
 
     const [y, m] = month.split('-').map(Number)
-    const ws = wb.addWorksheet(`${String(m).padStart(2, '0')}-${y}`)
-    ws.addRow([`Vyúčtovanie ${monthName(m - 1)} ${y}`]).font = { bold: true, size: 14 }
-    const sum = lines.reduce((t, l) => t + l.amount, 0)
-    const sumRow = ws.addRow(['Spolu']) // doplní sa nižšie
-    ws.addRow([`Scany dokladov: Google Drive → Event Hub / Účty / ${month}`])
+    const ws = wb.addWorksheet(`${monthName(m - 1).slice(0, 3).toUpperCase()} ${y}`)
+    // riadok 1 prázdny, riadok 2: Spolu + Scany, riadok 3 prázdny, riadok 4 hlavička, dáta od riadku 5
+    ws.addRow([])
+    const sumRow = ws.addRow([null, 'Spolu:', 0, 'Scany účtov:', `Google Drive → Event Hub / Účty / ${month}`])
     ws.addRow([])
     styleHeader(ws.addRow(['Dátum', 'Typ dokladu', 'Suma', 'Event', 'DPT', 'Popis', 'Kontrola', 'Bloček']))
     const first = ws.rowCount + 1
-    for (const l of lines) ws.addRow([xlDate(l.date), l.type, Math.round(l.amount * 100) / 100, l.event, l.dpt, l.desc, l.control, l.file])
+    for (const l of lines) ws.addRow([l.date, l.type, Math.round(l.amount * 100) / 100, l.event, l.dpt, l.desc, l.control, l.file])
     const last = ws.rowCount
+    const sum = lines.reduce((t, l) => t + l.amount, 0)
     sumRow.getCell(3).value = lines.length ? { formula: `SUM(C${first}:C${last})`, result: Math.round(sum * 100) / 100 } : 0
-    sumRow.font = { bold: true }
-    ws.getColumn(1).numFmt = 'dd.mm.yyyy'
-    ws.getColumn(3).numFmt = '#,##0.00'
-    ws.views = [{ state: 'frozen', ySplit: 5 }]
+    sumRow.getCell(2).font = { bold: true }
+    sumRow.getCell(3).font = { bold: true, color: { argb: 'FF00B050' } }
+    sumRow.getCell(4).font = { bold: true }
+    ws.getColumn(1).numFmt = 'd.m.yyyy'
+    ws.getColumn(1).alignment = { horizontal: 'left' }
+    ws.getColumn(3).numFmt = '0.00'
+    ws.views = [{ state: 'frozen', ySplit: 4 }]
     ws.eachRow((row) => row.eachCell((c) => {
       if (c.value && typeof c.value === 'object' && 'hyperlink' in c.value) c.font = { color: { argb: 'FF1155CC' }, underline: true }
     }))
     fitColumns(ws)
-    ws.getColumn(1).width = 12
+    ws.getColumn(1).width = 13
+    ws.getColumn(4).width = Math.min(ws.getColumn(4).width ?? 40, 40)
     docs += lines.length
     total += sum
   }

@@ -4,6 +4,16 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.9.1',
+    date: '27. 10. 2026',
+    title: 'Export Finance presne ako účtovná tabuľka',
+    items: [
+      'Hárok „SEP 2026“: Spolu hore (zelená suma), Scany účtov, stĺpce Dátum, Typ dokladu, Suma, Event, DPT, Popis, Kontrola, Bloček',
+      'Dátum ako 5.9.2026 alebo 19.-20.9.2026, typ dokladu malými písmenami (blok, ucet, taxi, brigadnik), DPT: EC / CLT / SED',
+      'Brigádnici: suma s 15 %, v stĺpci Bloček „brigadnik / poznámka z výplaty“',
+    ],
+  },
+  {
     version: '1.9.0',
     date: '27. 10. 2026',
     title: 'Čo chýba na evente + cesta z Bratislavy',
