@@ -27,6 +27,9 @@ export type EventRow = {
   rating: number | null
   no_expenses: boolean
   played_as_dj: boolean
+  route_km: number | null
+  route_min: number | null
+  route_for: string | null
 }
 
 export const TYPE_LABEL: Record<EventType, string> = {
@@ -134,3 +137,10 @@ export function mapUrl(e: Pick<EventRow, 'location' | 'location_url'>): string |
 
 export const eur = (n: number) =>
   new Intl.NumberFormat('sk-SK', { style: 'currency', currency: 'EUR' }).format(n)
+
+/** Čas cesty ako „1 h 05 min“ / „40 min“. */
+export function fmtDrive(min: number): string {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h === 0 ? `${m} min` : `${h} h ${String(m).padStart(2, '0')} min`
+}

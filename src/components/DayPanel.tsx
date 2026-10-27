@@ -2,11 +2,20 @@ import { Link } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronRight, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { missingOf } from '../lib/complete'
 import { TYPE_COLOR, addDays, diffDays, fmtDay, fmtRange, startDay, todayLocal, type EventRow } from '../lib/events'
 
 type Ev = Pick<EventRow, 'id' | 'title' | 'start_date' | 'end_date' | 'event_type' | 'status'>
 type Lent = { id: string; name: string; status: string; held_by: string | null; borrowed_until: string | null }
 type NotReturned = { quantity: number; equipment: { name: string } | null; events: { id: string; title: string; start_date: string } }
+type Incomplete = Ev & { location: string | null; missing: string[] }
+type Raw = Ev & {
+  location: string | null
+  event_drivers: { driver_id: string; drivers: { is_me: boolean } | null }[]
+  driver_payouts: { driver_id: string }[]
+  carton_movements: { type: string }[]
+  event_equipment: { equipment_id: string }[]
+}
 const LENT_LABEL: Record<string, string> = { borrowed: 'požičané', in_rent: 'v prenájme', rented_out: 'prenajaté', lost: 'stratené' }
 
 const COLS = 'id, title, start_date, end_date, event_type, status'
@@ -20,6 +29,7 @@ export function DayPanel({ isAdmin }: { isAdmin: boolean }) {
   const [open2, setOpen2] = useState(0)
   const [lent, setLent] = useState<Lent[]>([])
   const [notBack, setNotBack] = useState<NotReturned[]>([])
+  const [incomplete, setIncomplete] = useState<Incomplete[]>([])
 
   useEffect(() => {
     const t0 = today + 'T00:00:00Z'
@@ -41,6 +51,25 @@ export function DayPanel({ isAdmin }: { isAdmin: boolean }) {
     supabase
       .from('events').select('id', { count: 'exact', head: true }).eq('status', 'planned').lt('end_date', t0).gte('start_date', '2026-01-01T00:00:00Z')
       .then(({ count }) => setOpen2(count ?? 0))
+    // neúplné eventy: od začiatku roka po najbližšie 2 týždne
+    supabase
+      .from('events')
+      .select(COLS + ', location, event_drivers(driver_id, drivers(is_me)), driver_payouts(driver_id), carton_movements(type), event_equipment(equipment_id)')
+      .neq('status', 'cancelled').gte('start_date', '2026-01-01T00:00:00Z').lte('start_date', addDays(today, 14) + 'T00:00:00Z')
+      .order('start_date', { ascending: false }).range(0, 499)
+      .then(({ data }) => {
+        const list = ((data ?? []) as unknown as Raw[]).map((r) => {
+          const paid = new Set(r.driver_payouts.map((p) => p.driver_id))
+          const missing = missingOf(r, {
+            drivers: r.event_drivers.length,
+            externalWithoutPayout: r.event_drivers.filter((x) => !x.drivers?.is_me && !paid.has(x.driver_id)).length,
+            cartons: r.carton_movements.filter((m) => m.type === 'event').length,
+            gear: r.event_equipment.length,
+          }, today)
+          return { ...r, missing }
+        }).filter((r) => r.missing.length > 0)
+        setIncomplete(list)
+      })
     // technika, ktorá je práve požičaná / v prenájme / stratená
     supabase
       .from('equipment').select('id, name, status, held_by, borrowed_until').eq('active', true).in('status', ['borrowed', 'in_rent', 'rented_out', 'lost']).order('name')
@@ -53,7 +82,7 @@ export function DayPanel({ isAdmin }: { isAdmin: boolean }) {
       .then(({ data }) => setNotBack((data ?? []) as unknown as NotReturned[]))
   }, [today, isAdmin])
 
-  const attention = open2 + lent.length + notBack.length
+  const attention = open2 + lent.length + notBack.length + incomplete.length
 
   const row = (e: Ev) => (
     <Link key={e.id} to="/event/$id" params={{ id: e.id }} className="flex items-center gap-3 px-4 py-3 min-w-0">
@@ -109,6 +138,26 @@ export function DayPanel({ isAdmin }: { isAdmin: boolean }) {
                 ))}
               </ul>
               {open2 > open.length && <p className="text-xs muted mt-1">…a ďalších {open2 - open.length}</p>}
+            </div>
+          )}
+          {incomplete.length > 0 && (
+            <div className="mt-3">
+              <p className="eyebrow">Neúplné eventy</p>
+              <ul className="list text-sm">
+                {incomplete.slice(0, 10).map((e) => (
+                  <li key={e.id}>
+                    <Link to="/event/$id" params={{ id: e.id }} className="flex items-center gap-2 py-2">
+                      <span className="dot" style={{ background: TYPE_COLOR[e.event_type] }} />
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate font-medium">{e.title}</span>
+                        <span className="block text-xs muted">{fmtDay(startDay(e)).replace(/ \d{4}$/, '')} · chýba: {e.missing.join(', ')}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 muted shrink-0" aria-hidden />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {incomplete.length > 10 && <p className="text-xs muted mt-1">…a ďalších {incomplete.length - 10}</p>}
             </div>
           )}
           {(lent.length > 0 || notBack.length > 0) && (

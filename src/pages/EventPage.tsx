@@ -1,6 +1,6 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronLeft, ExternalLink, FileText, MapPin, Plus } from 'lucide-react'
+import { CalendarDays, Car, Check, ChevronLeft, CircleCheck, ExternalLink, FileText, MapPin, Plus, TriangleAlert } from 'lucide-react'
 import { Badge, Chips, Empty, ErrorText, Field, KV, Section, Seg, dayWord, linkify } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -13,16 +13,18 @@ import { EventReport } from '../components/EventReport'
 import { EventNavBar } from '../components/EventNavBar'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { type Expense, DOC_LABEL, EXPENSE_COLUMNS } from '../lib/finance'
+import { missingOf } from '../lib/complete'
 import {
   type Department, type EventRow, type EventStatus, type EventType,
   DEPT_LABEL, STATUS_LABEL, TYPE_COLOR, TYPE_LABEL, TYPE_TEXT,
-  durationDays, eur, fmtDay, fmtRange, mapUrl, relDay, startDay,
+  durationDays, eur, fmtDay, fmtDrive, fmtRange, mapUrl, relDay, startDay, todayLocal,
 } from '../lib/events'
 
 type Carton = EventCartonRow & { flavors: { name: string; label: string | null; sort_order: number } | null }
-type Payout = { id: string; amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null }
+type Payout = { id: string; driver_id: string; amount: number; tax_rate: number; paid: boolean; drivers: { name: string } | null }
 
-type Details = { cartons: Carton[]; expenses: Expense[]; payouts: Payout[] }
+type EvDrv = { driver_id: string; drivers: { is_me: boolean } | null }
+type Details = { cartons: Carton[]; expenses: Expense[]; payouts: Payout[]; evDrivers: EvDrv[] }
 
 // polia eventu, ktoré sa dajú meniť priamo na stránke (Basecamp polia sa menia len synchronizáciou)
 type Editable = Pick<EventRow, 'status' | 'event_type' | 'departments' | 'location' | 'location_url' | 'planned_arrival' | 'contact' | 'spectators' | 'description'>
@@ -52,25 +54,39 @@ export function EventPage() {
     if (!data) return setError('Event sa nenašiel.')
     setEv(data as EventRow)
 
-    const [ct, ex, po] = await Promise.all([
+    const [ct, ex, po, ed] = await Promise.all([
       supabase.from('carton_movements').select('id, flavor_id, cartons, flavors(name, label, sort_order)').eq('event_id', id).eq('type', 'event'),
       isAdmin
         ? supabase.from('expenses').select(EXPENSE_COLUMNS).eq('event_id', id).order('date')
         : Promise.resolve({ data: [] }),
       isAdmin
-        ? supabase.from('driver_payouts').select('id, amount, tax_rate, paid, drivers(name)').eq('event_id', id)
+        ? supabase.from('driver_payouts').select('id, driver_id, amount, tax_rate, paid, drivers(name)').eq('event_id', id)
         : Promise.resolve({ data: [] }),
+      supabase.from('event_drivers').select('driver_id, drivers(is_me)').eq('event_id', id),
     ])
     setD({
       cartons: (ct.data ?? []) as unknown as Carton[],
       expenses: (ex.data ?? []) as unknown as Expense[],
       payouts: (po.data ?? []) as unknown as Payout[],
+      evDrivers: (ed.data ?? []) as unknown as EvDrv[],
     })
   }
   useEffect(() => {
     setExpenseForm(null); setShowAllGear(false); setD(null); setSaveState('idle'); setSaveError(null)
     load()
   }, [id, isAdmin])
+
+  // Trasa z Bratislavy: spočíta sa sama, keď sa zmení lokalita (len admin).
+  const routeTried = useRef('')
+  useEffect(() => {
+    if (!isAdmin || !ev || ev.id !== id) return
+    const place = ev.location?.trim() ?? ''
+    if ((ev.route_for ?? '') === place) return
+    const key = id + '|' + place
+    if (routeTried.current === key) return
+    routeTried.current = key
+    supabase.functions.invoke('route', { body: { event_id: id } }).then(({ error }) => { if (!error) load() })
+  }, [isAdmin, id, ev?.id, ev?.location, ev?.route_for])
 
   /** Uloží zmenu poľa eventu hneď. Stránka sa prekreslí ešte pred odpoveďou servera, pri chybe sa načíta pôvodný stav. */
   async function patch(p: Partial<Editable>) {
@@ -115,6 +131,16 @@ export function EventPage() {
   const rel = relDay(ev)
   const map = mapUrl(ev)
   const totalPieces = gear.evEq.reduce((s, e) => s + e.quantity, 0)
+  const paidIds = new Set(d.payouts.map((p) => p.driver_id))
+  const missing = isAdmin
+    ? missingOf(ev, {
+        drivers: d.evDrivers.length,
+        externalWithoutPayout: d.evDrivers.filter((x) => !x.drivers?.is_me && !paidIds.has(x.driver_id)).length,
+        cartons: cartons.length,
+        gear: gear.evEq.length,
+      }, todayLocal())
+    : []
+  const routeOk = ev.route_km != null && ev.route_min != null && (ev.route_for ?? '') === (ev.location?.trim() ?? '')
 
   return (
     <div className="page">
@@ -153,6 +179,18 @@ export function EventPage() {
         )}
         {saveError && <div className="mt-2"><ErrorText>{saveError}</ErrorText></div>}
       </header>
+
+      {/* Čo ešte chýba (len admin) */}
+      {isAdmin && ev.status !== 'cancelled' && (
+        missing.length === 0 ? (
+          <p className="flex items-center gap-2 text-sm font-semibold text-[var(--ok)]"><CircleCheck className="w-5 h-5" aria-hidden />Event je kompletný</p>
+        ) : (
+          <div className="notice flex items-start gap-2">
+            <TriangleAlert className="w-5 h-5 text-[var(--warn)] shrink-0" aria-hidden />
+            <p className="text-sm"><b>Čo chýba:</b> {missing.join(', ')}</p>
+          </div>
+        )
+      )}
 
       {/* 1. Vozidlo a vodič */}
       <Section title="Vozidlo a vodič">
@@ -200,6 +238,12 @@ export function EventPage() {
               ) : (
                 <span className="text-xs muted">Po zadaní lokality sa tu ukáže odkaz na mapu.</span>
               )}
+              {routeOk && (
+                <span className="text-sm inline-flex items-center gap-1.5">
+                  <Car className="w-4 h-4 muted" aria-hidden />
+                  <b className="num">≈ {Math.round(Number(ev.route_km))} km</b><span className="muted">· {fmtDrive(Number(ev.route_min))} z Bratislavy</span>
+                </span>
+              )}
             </div>
             <Field label="Vlastný odkaz na mapu (nepovinné)" hint="Nechaj prázdne – odkaz sa nájde automaticky podľa lokality.">
               <LiveField type="url" inputMode="url" value={ev.location_url ?? ''} placeholder="https://maps.google.com/…" onSave={(v) => patch({ location_url: nn(v) })} />
@@ -220,6 +264,7 @@ export function EventPage() {
                 </a>
               )}
             </KV>
+            {routeOk && <KV label="Cesta">≈ {Math.round(Number(ev.route_km))} km · {fmtDrive(Number(ev.route_min))} z Bratislavy</KV>}
             <KV label="Kontakt">{ev.contact && <span className="whitespace-pre-wrap">{linkify(ev.contact)}</span>}</KV>
             <KV label="Diváci">{ev.spectators}</KV>
             <KV label="Popis">{ev.description && <span className="whitespace-pre-wrap">{ev.description}</span>}</KV>

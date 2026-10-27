@@ -4,6 +4,16 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.9.0',
+    date: '27. 10. 2026',
+    title: 'Čo chýba na evente + cesta z Bratislavy',
+    items: [
+      'Na evente (admin) pás „Čo chýba“ (vodič, výplata, lokalita, technika, kartóny) alebo zelené „Event je kompletný“',
+      'Dashboard → Treba doriešiť: zoznam neúplných eventov',
+      'Pri lokalite sa sama spočíta vzdialenosť a čas cesty autom z Bratislavy (Edge Function route)',
+    ],
+  },
+  {
     version: '1.8.1',
     date: '24. 10. 2026',
     title: 'Zoznam vodičov v Nastaveniach',
