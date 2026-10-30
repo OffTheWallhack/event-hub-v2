@@ -4,6 +4,7 @@ import { Placeholder } from './pages/Placeholder'
 import { Users } from './pages/Users'
 import { Dashboard } from './pages/Dashboard'
 import { EventPage } from './pages/EventPage'
+import { EventExportPage } from './pages/EventExportPage'
 import { Cartons } from './pages/Cartons'
 import { EquipmentPage } from './pages/EquipmentPage'
 import { Finance } from './pages/Finance'
@@ -52,9 +53,16 @@ const eventRoute = createRoute({
   component: EventPage,
 })
 
+const eventExportRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/event/$id/export',
+  component: EventExportPage,
+})
+
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
   eventRoute,
+  eventExportRoute,
   createRoute({ getParentRoute: () => rootRoute, path: '/todo', component: Todos }),
   createRoute({ getParentRoute: () => rootRoute, path: '/technika', component: EquipmentPage }),
   createRoute({ getParentRoute: () => rootRoute, path: '/kartony', component: Cartons }),

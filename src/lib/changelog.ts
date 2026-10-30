@@ -4,6 +4,17 @@ export type ChangeEntry = { version: string; date: string; title: string; items:
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.11.0',
+    date: '30. 10. 2026',
+    title: 'Export eventu pre šéfa + fotky z eventu',
+    items: [
+      'Na evente tlačidlo „Export pre šéfa“: dátum, miesto, typ, autá, technika, Red Bull kartóny a fotky – bez financií',
+      'Export sa uloží ako PDF (tlačidlo Uložiť PDF, vždy na bielom pozadí)',
+      'Nová časť Fotky na evente: admin pridá naraz viac fotiek, zväčšenie ťuknutím, mazanie cez ×',
+      'Fotky sú v súkromnom priečinku (nie sú verejné), zmenšené na max 1600 px',
+    ],
+  },
+  {
     version: '1.10.0',
     date: '27. 10. 2026',
     title: '3D garáž so Zuborom a Suggou',

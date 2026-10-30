@@ -34,10 +34,10 @@ export function Layout() {
   return (
     <div className="min-h-full">
       {/* pás pod hodinami iPhonu, aby obsah pri rolovaní nebol pod stavovým riadkom */}
-      <div className="fixed top-0 inset-x-0 z-40 glass" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
+      <div className="fixed top-0 inset-x-0 z-40 glass no-print" style={{ height: 'env(safe-area-inset-top, 0px)' }} />
 
       {/* počítač: bočný panel */}
-      <aside className="hidden md:flex fixed inset-y-0 left-0 z-30 w-60 flex-col border-r line glass px-3 py-5">
+      <aside className="no-print hidden md:flex fixed inset-y-0 left-0 z-30 w-60 flex-col border-r line glass px-3 py-5">
         <Link to="/" className="px-3 mb-6 block">
           <span className="block text-lg font-bold tracking-tight display">Event Hub</span>
           <span className="block text-xs muted">Red Bull · Event Car</span>
@@ -57,15 +57,15 @@ export function Layout() {
         </div>
       </aside>
 
-      <main className="md:pl-60">
+      <main className="md:pl-60 print:!pl-0">
         <div className="max-w-3xl mx-auto px-4 pt-4 md:pt-8" style={{ paddingBottom: 'calc(var(--nav-h) + var(--bottom-extra, 0px) + env(safe-area-inset-bottom, 0px) + 2rem)' }}>
-          {isAdmin && <Reminders />}
+          {isAdmin && <div className="no-print"><Reminders /></div>}
           <Outlet />
         </div>
       </main>
 
       {/* spodok: lišta stránky (mesiac, ďalší event…) + na mobile hlavné menu */}
-      <div className="bottom-wrap fixed inset-x-0 bottom-0 z-30 md:left-60 glass border-t line" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="no-print bottom-wrap fixed inset-x-0 bottom-0 z-30 md:left-60 glass border-t line" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <div id="bottom-slot" className="empty:hidden" />
         <nav className="tabbar md:hidden" aria-label="Hlavné menu">
           {tabs.map((n) => (

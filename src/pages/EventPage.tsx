@@ -1,12 +1,13 @@
 import { Link, useParams } from '@tanstack/react-router'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { CalendarDays, Car, Check, ChevronLeft, CircleCheck, ExternalLink, FileText, MapPin, Plus, TriangleAlert } from 'lucide-react'
+import { CalendarDays, Car, Check, ChevronLeft, CircleCheck, ExternalLink, FileDown, FileText, MapPin, Plus, TriangleAlert } from 'lucide-react'
 import { Badge, Chips, Empty, ErrorText, Field, KV, Section, Seg, dayWord, linkify } from '../components/ui'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { EquipmentGrid, VehicleChips, useEventGear } from '../components/EventGear'
 import { EventDrivers } from '../components/EventDrivers'
 import { EventCartons, type EventCartonRow } from '../components/EventCartons'
+import { EventPhotos } from '../components/EventPhotos'
 import { LiveField } from '../components/LiveField'
 import { BriefShare } from '../components/BriefShare'
 import { EventReport } from '../components/EventReport'
@@ -145,8 +146,9 @@ export function EventPage() {
   return (
     <div className="page">
       <EventNavBar ev={ev} />
-      <div>
-        <Link to="/" search={{ m: startDay(ev).slice(0, 7) }} className="btn btn-sm btn-quiet -ml-3"><ChevronLeft aria-hidden />Kalendár</Link>
+      <div className="flex items-center gap-2">
+        <Link to="/" search={{ m: startDay(ev).slice(0, 7) }} className="btn btn-sm btn-quiet -ml-3 mr-auto"><ChevronLeft aria-hidden />Kalendár</Link>
+        <Link to="/event/$id/export" params={{ id: ev.id }} className="btn btn-sm"><FileDown aria-hidden />Export pre šéfa</Link>
       </div>
 
       {/* Hlavička: čo prišlo z Basecampu (mení ho len synchronizácia) */}
@@ -280,6 +282,11 @@ export function EventPage() {
       {/* 4. Kartóny */}
       <Section title="Kartóny">
         <EventCartons eventId={ev.id} day={startDay(ev)} isAdmin={isAdmin} rows={d.cartons} onChanged={load} />
+      </Section>
+
+      {/* Fotky (idú aj do exportu pre šéfa) */}
+      <Section title="Fotky">
+        <EventPhotos eventId={ev.id} isAdmin={isAdmin} />
       </Section>
 
       {/* 5. Náklady */}
